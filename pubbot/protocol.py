@@ -2,7 +2,7 @@
 from struct import pack, unpack
 
 from twisted.internet import defer
-from twisted.internet.protocol import BaseProtocol
+from twisted.internet.protocol import Protocol
 from twisted.web.client import getPage
 from twisted.python import log
 
@@ -124,7 +124,7 @@ class MinecraftWriter(object):
             self.write_byte(0)
 
 
-class MinecraftClientProtocol(BaseProtocol):
+class MinecraftClientProtocol(Protocol):
 
     server_password = None
 
@@ -145,8 +145,8 @@ class MinecraftClientProtocol(BaseProtocol):
         log.msg("ATTEMPTING TO HANDSHAKE")
         self.send_handshake(self.username)
 
-    def connectionLost(self, unknown):
-        pass
+    def connectionLost(self, reason):
+        log.msg("connectionLost", reason)
 
     @defer.inlineCallbacks
     def read_loop(self):
