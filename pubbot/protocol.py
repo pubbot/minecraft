@@ -6,6 +6,86 @@ from twisted.internet.protocol.Protocol import BaseProtocol
 from twisted.web.client import getPage
 
 
+class MinecreaftReader(object):
+
+    def __init__(self, data):
+        self.data = data
+        self.length_wanted = 0
+        self.callback = None
+
+    def dataReceived(self, data):
+        self.data += data
+
+        if self.callback and len(self.data) >= self.length_wanted:
+            callback, self.callback = self.callback, None
+            callback.callback(None)
+
+    @defer.inlineCallbacks
+    def read_raw(self, num_bytes):
+        """
+        I read x bytes from the server, if there isnt enough data then i yield a Deferred
+        effectively pausing the current code until the rest of the data is available
+        """
+        if len(self.data) <= num_bytes:
+             # Not enough data: Pause this function until there is
+             self.length_wanted = num_bytes
+             self.callback = defer.Deferred()
+             yield self.callback
+
+        # Pop the data off the front of data and return it
+        data = self.data[0:num_bytes]
+        self.data = self.data[num_bytes:]
+        defer.returnValue(data)
+
+    @defer.inlineCallbacks
+    def read_packet_id(self):
+        val = unpack(">B", yield self.read_raw(1))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_byte(self):
+        val = unpack(">b", yield self.read_raw(1))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_short(self):
+        val = unpack(">h", yield self.read_raw(2))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_int(self):
+        val = unpack(">i", yield self.read_raw(4))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_long(self):
+        val = unpack(">l", yield self.read_raw(8))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_float(self):
+        val = unpack(">f", yield self.read_raw(4))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_double(self):
+        val = unpack(">d", yield self.read_raw(8))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_string(self):
+        length = yield self.read_short()
+        val = unpack(">%ds" % length, self.read_raw(length))
+        defer.returnValue(val)
+
+    @defer.inlineCallbacks
+    def read_bool(self):
+        val = yield self.read_byte()
+        if val:
+            return True
+        else:
+            return False
+
 class MinecraftWriter(object):
 
     def __init__(self, transport):
@@ -55,10 +135,202 @@ class MinecraftClientProtocol(BaseProtocol):
         I am called when a connection has been established to a Minecraft server
         """
         self.writer = MinecraftWriter(self.transport)
+        self.reader = MinecraftReader()
+        self.dataReceived = self.reader.dataReceived
+
         self.send_handshake(self.username)
 
-    def dataReceived(self, data):
-        pass
+    @defer.inlineCallbacks
+    def read_loop(self):
+        """
+        I constantly read incoming packets off the wire. I magically suspend when there is no more data
+        and resume when there is (see MinecraftReader for how that is implemented)
+        """
+        while True:
+            packet_id = yield self.reader.read_packet_id()
+
+            if packet_id == 0x01:
+                unknown1 = yield self.reader.read_int()
+                unknown2 = yield self.reader.read_string()
+                unknown3 = yield self.reader.read_string()
+                self.on_login_response(unknown1, unknown2, unknown3)
+
+            elif packet_id == 0x02:
+                connection_hash = yield self.reader.read_string()
+                self.on_handshake(connection_hash)
+
+            elif packet_id == 0x03:
+                message = yield self.reader.read_string()
+                self.on_message(message)
+
+            elif packet_id == 0x04:
+                time = yield self.read_long()
+                self.on_time(time)
+
+            elif packet_id == 0x05:
+                type = yield self.reader.read_int()
+                count = yield self.reader.read_short()
+                payload = yield self.reader.read_raw(count)
+                self.on_player_inventory(type, count, payload)
+
+            elif packet_id == 0x06:
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                self.on_spawn_position(x, y, z)
+
+            elif packet_id == 0x0D:
+                x = yield self.reader.read_double()
+                stance = yield self.reader.read_double()
+                y = yield self.reader.read_double()
+                z = yield slef.reader.read_double()
+                yaw = yield self.reader.read_float()
+                pitch = yield self.reader.read_pitch()
+                on_ground = yield self.reader.read_bool()
+                self.on_player_position_and_look(x, stance, y, z, yaw, pitch, on_ground)
+
+            elif packet_id == 0x11:
+                item_type = yield self.reader.read_short()
+                count = yield self.reader.read_byte()
+                life = yield self.reader.read_short()
+                self.on_add_to_inventory(item_type, count, life)
+
+            elif packet_id == 0x12:
+                eid = yield self.reader.read_int()
+                animate = yield self.reader.read_bool()
+                self.on_arm_animation(eid, animate)
+
+            elif packet_id == 0x14:
+                eid = yield self.reader.read_int()
+                player_name = yield self.reader.read_string()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                rotation = yield self.reader.read_byte()
+                pitch = yield self.reader.read_pitch()
+                current_item = yield self.reader.read_short()
+                self.on_named_entity_spawn(eid, player_name, x, y, z, rotation, pitch, current_item)
+
+            elif packet_id == 0x15:
+                eid = yield self.reader.read_int()
+                item = yield self.reader.read_short()
+                count = yield self.reader.read_byte()
+                x = yield self.read_int()
+                y = yield self.read_int()
+                z = yield self.read_int()
+                rotation = yield self.reader.read_byte()
+                pitch = yield self.reader.read_byte()
+                roll = yield self.reader.read_byte()
+                self.on_pickup_spawn(eid, item, count, x, y, z, rotation, pitch, roll)
+
+            elif packet_id == 0x16:
+                collected_eid = yield self.reader.read_int()
+                collector_eid = yield self.reader.read_int()
+                self.on_collect_item(collected_eid, collector_eid)
+
+            elif packet_id == 0x17:
+                eid = yield self.reader.read_int()
+                type = yield self.reader.read_byte()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                self.on_add_object_vehicle(eid, type, x, y, z)
+
+            elif packet_id == 0x18:
+                eid = yield self.reader.read_int()
+                type = yield self.reader.read_byte()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                yaw = yield self.reader.read_byte()
+                pitch = yield self.reader.read_byte()
+                self.on_mob_spawn(eid, type, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x1D:
+                eid = yield self.reader.read_int()
+                self.on_destroy_entity(eid)
+
+            elif packet_id == 0x1E:
+                eid = yield self.reader.read_int()
+                self.on_entity(eid)
+
+            elif packet_id == 0x1F:
+                eid = yield self.reader.read_int()
+                x = yield self.reader.read_byte()
+                y = yield self.reader.read_byte()
+                z = yield self.reader.read_byte()
+                self.on_entity_relative_move(eid, x, y, z)
+
+            elif packet_id == 0x20:
+                eid = yield self.reader.read_int()
+                yaw = yield self.reader.read_byte()
+                pitch = yield self.reader.read_byte()
+                self.on_entity_look(eid, yaw, pitch)
+
+            elif packet_id == 0x21:
+                eid = yield self.reader.read_int()
+                x = yield self.reader.read_byte()
+                y = yield self.reader.read_byte()
+                z = yield self.reader.read_byte()
+                yaw = yield self.read_byte()
+                pitch = yield self.read_byte()
+                self.on_entity_look_and_relative_move(eid, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x22:
+                eid = yield self.reader.read_int()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                yaw = yield self.reader.read_byte()
+                pitch = yield self.reader.read_byte()
+                self.on_entity_teleport(eid, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x32:
+                x = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                mode = yield self.reader.read_bool()
+                self.on_pre_chunk(x, z, mode)
+
+            elif packet_id == 0x33:
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                size_x = yield self.reader.read_byte()
+                size_y = yield self.reader.read_byte()
+                size_z = yield self.reader.read_byte()
+                compressed_chunk_size = yield self.reader.read_int()
+                compressed_chunk = yield self.read_raw(compressed_chunk_size)
+                self.on_map_chunk(self, x, y, z, slice_x, slice_y, slice_z, compressed_chunk_size, compressed_chunk)
+
+            elif packet_id == 0x34:
+                chunk_x = yield self.reader.read_int()
+                chunk_z = yield self.reader.read_int()
+                array_size = yield self.reader.read_short()
+                coordinate_array = yield self.reader.read_raw(1 * array_size)
+                type_array = yield self.reader.read_raw(1 * array_size)
+                metadata_array = yield self.reader.read_raw(1 * array_size)
+                self.on_multi_block_change(chunk_x, chunk_z, array_size, coordinate_array, type_array, metadata_array)
+
+            elif packet_id == 0x35:
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_byte()
+                z = yield self.reader.read_int()
+                type = yield self.reader.read_byte()
+                metadata = yield self.reader.read_byte()
+                self.on_block_change(x, y, z, type, metadata)
+
+            elif packet_id == 0x3B:
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_short()
+                z = yield self.reader.read_int()
+                payload_size = yield self.reader.read_short()
+                payload = yield self.reader.read_raw(payload_size)
+                self.on_complex_entities(x, y, z, payload_size, payload)
+
+            elif packet_id == 0xFF:
+                reason = yield self.reader.read_string()
+                self.on_kick(reason)
+                defer.returnValue(None)
 
     def on_login_response(self, some_int, some_string_1, some_string_2):
         """
