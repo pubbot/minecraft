@@ -1,7 +1,7 @@
 
 from struct import pack, unpack
 
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.internet.protocol import Protocol
 from twisted.web.client import getPage
 from twisted.python import log
@@ -162,7 +162,10 @@ class MinecraftClientProtocol(Protocol):
             packet_id = yield self.reader.read_packet_id()
             log.msg("Got packet:", packet_id)
 
-            if packet_id == 0x01:
+            if packet_id == 0x00:
+                self.on_keep_alive()
+
+            elif packet_id == 0x01:
                 unknown1 = yield self.reader.read_int()
                 unknown2 = yield self.reader.read_string()
                 unknown3 = yield self.reader.read_string()
@@ -178,12 +181,20 @@ class MinecraftClientProtocol(Protocol):
 
             elif packet_id == 0x04:
                 time = yield self.reader.read_long()
-                self.on_time(time)
+                self.on_time_update(time)
 
             elif packet_id == 0x05:
                 type = yield self.reader.read_int()
                 count = yield self.reader.read_short()
-                payload = yield self.reader.read_raw(count)
+
+                payload = {}
+                for i in range(count):
+                    item_id = yield self.reader.read_short()
+                    if item_id != -1:
+                        count = yield self.reader.read_byte()
+                        health = yield self.reader.read_short()
+                        payload[i] = (item_id, count, health)
+
                 self.on_player_inventory(type, count, payload)
 
             elif packet_id == 0x06:
@@ -220,7 +231,7 @@ class MinecraftClientProtocol(Protocol):
                 y = yield self.reader.read_int()
                 z = yield self.reader.read_int()
                 rotation = yield self.reader.read_byte()
-                pitch = yield self.reader.read_pitch()
+                pitch = yield self.reader.read_byte()
                 current_item = yield self.reader.read_short()
                 self.on_named_entity_spawn(eid, player_name, x, y, z, rotation, pitch, current_item)
 
@@ -349,6 +360,9 @@ class MinecraftClientProtocol(Protocol):
                 self.send_disconnect("I'm sorry Dave, didn't understand that")
                 defer.returnValue(None)
 
+    def on_keep_alive(self):
+        self.send_keep_alive()
+
     def on_login_response(self, some_int, some_string_1, some_string_2):
         """
         I am sent by the server if it accepts the login request
@@ -402,6 +416,10 @@ class MinecraftClientProtocol(Protocol):
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
         if self.state != "ready":
             self.send_player_position_and_look(x, y, stance, z, yaw, pitch, on_ground)
+
+            self.keepalive = task.LoopingCall(self.send_keep_alive)
+            self.keepalive.start(40)
+
             self.state = "ready"
 
     def on_add_to_inventory(self, item_type, count, life):
@@ -450,6 +468,9 @@ class MinecraftClientProtocol(Protocol):
         pass
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
+        pass
+
+    def on_block_change(self, x, y, z, type, metadata):
         pass
 
     def on_complex_entities(self, x, y, z, payload_size, payload):
