@@ -127,7 +127,7 @@ class MinecraftWriter(object):
 
 class MinecraftClientProtocol(Protocol):
 
-    server_password = None
+    server_password = "Password"
 
     def __init__(self, username, password):
         self.username = username
@@ -366,15 +366,15 @@ class MinecraftClientProtocol(Protocol):
             pass
         else:
             # If hash isnt "-" or "+" then we have an hash we need to pass to the minecraft servers to authenticate this user
-            page = yield getPage("http://www.minecraft.net/game/getversion.jsp?user=%s&password=%s&version=11" % (self.username, self.password))
+            page = yield getPage("http://www.minecraft.net/game/getversion.jsp?user=%s&password=%s&version=12" % (self.username, self.password))
             try:
-                version, ticket, self.username, self.session_id = page.split(":")
+                version, ticket, self.username, self.session_id, dummy = page.split(":")
             except:
                 raise ValueError("Need to raise a better exception, but '%s' isnt a valid handshake.." % page)
 
             # Name verification call...
-            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=<username>&sessionId=<session id>&serverId=<server hash>" % (self.username, self.session_id, connection_hash))
-            if confirmation != "ok":
+            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash))
+            if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
         self.send_login_request(2, self.username, self.server_password)
