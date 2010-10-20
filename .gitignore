@@ -1,0 +1,10 @@
+*.pyc
+.installed.cfg
+bin/
+develop-eggs/
+eggs/
+parts/
+pubbot.egg-info/
+pubbot.log
+twisted/plugins/dropin.cache
+
