@@ -62,9 +62,15 @@ class TestMinecraftReader(TestCase):
     def test_read_string(self):
         r = MinecraftReader()
         d = r.read_string()
-        r.dataReceived("\x00\x09minecraft1234567890")
+        r.dataReceived("\x00\x09minecraft")
         self.failUnlessEqual((yield d), "minecraft")
 
+    @defer.inlineCallbacks
+    def test_read_string_overflow(self):
+        r = MinecraftReader()
+        d = r.read_string()
+        r.dataReceived("\x00\x09minecraft1234567890")
+        self.failUnlessEqual((yield d), "minecraft")
 
     @defer.inlineCallbacks
     def test_read_bool(self):
