@@ -60,7 +60,7 @@ class MinecraftReader(object):
 
     @defer.inlineCallbacks
     def read_long(self):
-        val = unpack(">l", (yield self.read_raw(8)))[0]
+        val = unpack(">q", (yield self.read_raw(8)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
@@ -76,7 +76,8 @@ class MinecraftReader(object):
     @defer.inlineCallbacks
     def read_string(self):
         length = yield self.read_short()
-        val = unpack(">%ds" % length, self.read_raw(length))
+        data = yield self.read_raw(length)
+        val = unpack(">%ds" % length, data)[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
@@ -105,7 +106,7 @@ class MinecraftWriter(object):
         self.transport.write(pack(">i", val))
 
     def write_long(self, val):
-        self.transport.write(pack(">l", val))
+        self.transport.write(pack(">q", val))
 
     def write_float(self, val):
         self.transport.write(pack(">f", val))
