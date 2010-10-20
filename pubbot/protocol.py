@@ -2,18 +2,19 @@
 from struct import pack, unpack
 
 from twisted.internet import defer
-from twisted.internet.protocol.Protocol import BaseProtocol
+from twisted.internet.protocol import BaseProtocol
 from twisted.web.client import getPage
+from twisted.python import log
 
+class MinecraftReader(object):
 
-class MinecreaftReader(object):
-
-    def __init__(self, data):
-        self.data = data
+    def __init__(self):
+        self.data = ""
         self.length_wanted = 0
         self.callback = None
 
     def dataReceived(self, data):
+        log.msg("DATA RECEIVED", data, len(data))
         self.data += data
 
         if self.callback and len(self.data) >= self.length_wanted:
@@ -39,37 +40,37 @@ class MinecreaftReader(object):
 
     @defer.inlineCallbacks
     def read_packet_id(self):
-        val = unpack(">B", yield self.read_raw(1))
+        val = unpack(">B", (yield self.read_raw(1)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
     def read_byte(self):
-        val = unpack(">b", yield self.read_raw(1))
+        val = unpack(">b", (yield self.read_raw(1)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
     def read_short(self):
-        val = unpack(">h", yield self.read_raw(2))
+        val = unpack(">h", (yield self.read_raw(2)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
     def read_int(self):
-        val = unpack(">i", yield self.read_raw(4))
+        val = unpack(">i", (yield self.read_raw(4)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
     def read_long(self):
-        val = unpack(">l", yield self.read_raw(8))
+        val = unpack(">l", (yield self.read_raw(8)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
     def read_float(self):
-        val = unpack(">f", yield self.read_raw(4))
+        val = unpack(">f", (yield self.read_raw(4)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
     def read_double(self):
-        val = unpack(">d", yield self.read_raw(8))
+        val = unpack(">d", (yield self.read_raw(8)))[0]
         defer.returnValue(val)
 
     @defer.inlineCallbacks
@@ -82,9 +83,9 @@ class MinecreaftReader(object):
     def read_bool(self):
         val = yield self.read_byte()
         if val:
-            return True
+            defer.returnValue(True)
         else:
-            return False
+            defer.returnValue(False)
 
 class MinecraftWriter(object):
 
@@ -114,7 +115,7 @@ class MinecraftWriter(object):
 
     def write_string(self, val):
         self.write_short(len(val))
-        self.trasnport.write(pack(">%ds" % len(val), val))
+        self.transport.write(pack(">%ds" % len(val), val))
 
     def write_bool(self, val):
         if val:
@@ -127,8 +128,9 @@ class MinecraftClientProtocol(BaseProtocol):
 
     server_password = None
 
-    #def makeConnection(self, transport):
-    #    pass
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
 
     def connectionMade(self):
         """
@@ -138,7 +140,13 @@ class MinecraftClientProtocol(BaseProtocol):
         self.reader = MinecraftReader()
         self.dataReceived = self.reader.dataReceived
 
+        self.read_loop()
+
+        log.msg("ATTEMPTING TO HANDSHAKE")
         self.send_handshake(self.username)
+
+    def connectionLost(self, unknown):
+        pass
 
     @defer.inlineCallbacks
     def read_loop(self):
@@ -146,8 +154,10 @@ class MinecraftClientProtocol(BaseProtocol):
         I constantly read incoming packets off the wire. I magically suspend when there is no more data
         and resume when there is (see MinecraftReader for how that is implemented)
         """
+        log.msg("Entering read loop")
         while True:
             packet_id = yield self.reader.read_packet_id()
+            log.msg("Got packet:", packet_id)
 
             if packet_id == 0x01:
                 unknown1 = yield self.reader.read_int()
@@ -272,8 +282,8 @@ class MinecraftClientProtocol(BaseProtocol):
                 x = yield self.reader.read_byte()
                 y = yield self.reader.read_byte()
                 z = yield self.reader.read_byte()
-                yaw = yield self.read_byte()
-                pitch = yield self.read_byte()
+                yaw = yield self.reader.read_byte()
+                pitch = yield self.reader.read_byte()
                 self.on_entity_look_and_relative_move(eid, x, y, z, yaw, pitch)
 
             elif packet_id == 0x22:
@@ -332,17 +342,23 @@ class MinecraftClientProtocol(BaseProtocol):
                 self.on_kick(reason)
                 defer.returnValue(None)
 
+            else:
+                self.send_disconnect("I'm sorry Dave, didn't understand that")
+                defer.returnValue(None)
+
     def on_login_response(self, some_int, some_string_1, some_string_2):
         """
         I am sent by the server if it accepts the login request
         """
         pass
 
-    @defer.inlineCallback
+    @defer.inlineCallbacks
     def on_handshake(self, connection_hash):
         """
         I am the first packet sent when the client connects and am used for user authentication
         """
+        log.msg("on_handshake('%s')" % connection_hash)
+
         if connection_hash == "-":
             pass
         elif connection_hash == "+":
@@ -366,7 +382,7 @@ class MinecraftClientProtocol(BaseProtocol):
         """
         I am called when the client is sent a chat message
         """
-        pass
+        log.msg("Got message: %s" % message)
 
     def on_time_update(self, time):
         """
@@ -398,10 +414,10 @@ class MinecraftClientProtocol(BaseProtocol):
     def on_collect_item(self, collected_eid, collector_eid):
         pass
 
-    def on_add_object_vehicle(self. eid, type, x, y, z):
+    def on_add_object_vehicle(self, eid, type, x, y, z):
         pass
 
-    def on_mob_spawn(self, eid, type, x, y, z yaw, pitch):
+    def on_mob_spawn(self, eid, type, x, y, z, yaw, pitch):
         pass
 
     def on_destroy_entity(self, eid):
@@ -438,6 +454,7 @@ class MinecraftClientProtocol(BaseProtocol):
         """
         I am called when the server disconnects a client
         """
+        log.msg("Got kicked: %s" % reason)
         self.transport.loseConnection()
 
     def send_keep_alive(self):
