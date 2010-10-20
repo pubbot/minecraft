@@ -14,7 +14,7 @@ class MinecraftReader(object):
         self.callback = None
 
     def dataReceived(self, data):
-        log.msg("DATA RECEIVED", data, len(data))
+        #log.msg("DATA RECEIVED", data, len(data))
         self.data += data
 
         if self.callback and len(self.data) >= self.length_wanted:
@@ -27,7 +27,7 @@ class MinecraftReader(object):
         I read x bytes from the server, if there isnt enough data then i yield a Deferred
         effectively pausing the current code until the rest of the data is available
         """
-        if len(self.data) <= num_bytes:
+        if len(self.data) < num_bytes:
              # Not enough data: Pause this function until there is
              self.length_wanted = num_bytes
              self.callback = defer.Deferred()
@@ -77,6 +77,7 @@ class MinecraftReader(object):
     def read_string(self):
         length = yield self.read_short()
         data = yield self.read_raw(length)
+        log.msg(">%ds" % length)
         val = unpack(">%ds" % length, data)[0]
         defer.returnValue(val)
 
@@ -132,6 +133,7 @@ class MinecraftClientProtocol(Protocol):
     def __init__(self, username, password):
         self.username = username
         self.password = password
+        self.state = "not-ready"
 
     def connectionMade(self):
         """
@@ -172,10 +174,10 @@ class MinecraftClientProtocol(Protocol):
 
             elif packet_id == 0x03:
                 message = yield self.reader.read_string()
-                self.on_message(message)
+                self.on_chat_message(message)
 
             elif packet_id == 0x04:
-                time = yield self.read_long()
+                time = yield self.reader.read_long()
                 self.on_time(time)
 
             elif packet_id == 0x05:
@@ -194,9 +196,9 @@ class MinecraftClientProtocol(Protocol):
                 x = yield self.reader.read_double()
                 stance = yield self.reader.read_double()
                 y = yield self.reader.read_double()
-                z = yield slef.reader.read_double()
+                z = yield self.reader.read_double()
                 yaw = yield self.reader.read_float()
-                pitch = yield self.reader.read_pitch()
+                pitch = yield self.reader.read_float()
                 on_ground = yield self.reader.read_bool()
                 self.on_player_position_and_look(x, stance, y, z, yaw, pitch, on_ground)
 
@@ -226,9 +228,9 @@ class MinecraftClientProtocol(Protocol):
                 eid = yield self.reader.read_int()
                 item = yield self.reader.read_short()
                 count = yield self.reader.read_byte()
-                x = yield self.read_int()
-                y = yield self.read_int()
-                z = yield self.read_int()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
                 rotation = yield self.reader.read_byte()
                 pitch = yield self.reader.read_byte()
                 roll = yield self.reader.read_byte()
@@ -310,7 +312,7 @@ class MinecraftClientProtocol(Protocol):
                 size_y = yield self.reader.read_byte()
                 size_z = yield self.reader.read_byte()
                 compressed_chunk_size = yield self.reader.read_int()
-                compressed_chunk = yield self.read_raw(compressed_chunk_size)
+                compressed_chunk = yield self.reader.read_raw(compressed_chunk_size)
                 self.on_map_chunk(self, x, y, z, slice_x, slice_y, slice_z, compressed_chunk_size, compressed_chunk)
 
             elif packet_id == 0x34:
@@ -397,8 +399,10 @@ class MinecraftClientProtocol(Protocol):
     def on_spawn_position(self, X, Y, Z):
         pass
 
-    def on_player_position_and_look(self, X, stance, Y, Z, yaw, pitch, onground):
-        pass
+    def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
+        if self.state != "ready":
+            self.send_player_position_and_look(x, y, stance, z, yaw, pitch, on_ground)
+            self.state = "ready"
 
     def on_add_to_inventory(self, item_type, count, life):
         pass
@@ -506,7 +510,7 @@ class MinecraftClientProtocol(Protocol):
         self.writer.write_double(stance)
         self.writer.write_double(z)
         self.writer.write_float(yaw)
-        self.writer.write_pitch(pitch)
+        self.writer.write_float(pitch)
         self.writer.write_bool(on_ground)
 
     def send_player_digging(self, status, x, y, z, face):
