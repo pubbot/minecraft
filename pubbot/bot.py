@@ -1,5 +1,6 @@
 
 from twisted.internet import task
+from twisted.python import log
 
 from pubbot import activity
 
@@ -47,8 +48,8 @@ class Bot(object):
 
     def queue_immediate_actions(self, actions):
         if isinstance(actions, tuple):
-            for i in range(len(actions)-1, 0):
-                self.actions.insert(0, actions[i])
+            for action in reversed(actions):
+                self.actions.insert(0, action)
         else:
             self.actions.insert(0, actions)
 

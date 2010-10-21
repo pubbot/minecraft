@@ -76,6 +76,6 @@ class Functor(Action):
         self.kwargs = kwargs
 
     def do(self):
-        return self.func(*args, **kwargs)
+        return self.func(*self.args, **self.kwargs)
 
 
