@@ -10,20 +10,20 @@ class Action(object):
 
 class Idle(Action):
 
-    def __init__(self, time):
-        super(MoveTo, self).__init__(bot)
-        self.time = time
+    def __init__(self, bot, ticks):
+        super(Idle, self).__init__(bot)
+        self.ticks = ticks
 
     def do(self):
-        self.time -= 0.1
-        if self.time > 0:
+        self.ticks -= 1
+        if self.ticks > 0:
             return self
 
 
 class Say(Action):
 
-    def __init__(self, bot, target):
-        super(Teleport, self).__init__(bot)
+    def __init__(self, bot, message):
+        super(Say, self).__init__(bot)
         self.message = message
 
     def do(self):
@@ -52,6 +52,10 @@ class MoveTo(Action):
         self.z = z
 
     def do(self):
+        # If i'm in free fall i can't move towards an objective
+        if not self.bot.on_ground:
+            return self
+
         # Need to move toward the target, but without tripping speed hack detection
 
         # Trace down and find the ground - do if need to experience gravity
