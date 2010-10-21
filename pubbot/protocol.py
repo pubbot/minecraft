@@ -324,7 +324,6 @@ class BaseMinecraftClientProtocol(Protocol):
                 size_y = yield self.reader.read_byte()
                 size_z = yield self.reader.read_byte()
                 compressed_chunk_size = yield self.reader.read_int()
-                log.msg("compressed_chunk_size is", compressed_chunk_size)
                 compressed_chunk = yield self.reader.read_raw(compressed_chunk_size)
                 self.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
 
@@ -577,12 +576,25 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         BaseMinecraftClientProtocol.__init__(self, username, password)
         self.bot = bot.Bot(self)
 
+    def on_player_position(self, x, y, z):
+        self.bot.x = x
+        self.bot.y = y
+        self.bot.z = z
+
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
         should_start = False
         if self.state != "ready":
             should_start = True
 
         BaseMinecraftClientProtocol.on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground)
+
+        self.bot.x = x
+        self.bot.y = y
+        self.bot.z = z
+        self.bot.stance = stance
+        self.bot.yaw = yaw
+        self.bot.pitch = pitch
+        self.bot.on_ground = on_ground
 
         if should_start:
             self.bot.start()

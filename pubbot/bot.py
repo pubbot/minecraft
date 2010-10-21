@@ -27,7 +27,14 @@ class Bot(object):
 
     def frame(self):
         self.execute_actions()
-        self.protocol.send_player_position_and_look(self.x, self.stance, self.y, self.z, self.yaw, self.pitch, self.on_ground)
+
+        # Cap stance to 0.1 <= stance <= 1.65 or we get kicked
+        if self.stance - self.y < 0.1:
+            self.stance = self.y + 0.1
+        elif self.stance - self.y > 1.65:
+            self.stance = self.y + 1.65
+
+        self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
 
     def execute_actions(self):
         if self.actions:
