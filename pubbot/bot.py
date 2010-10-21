@@ -1,6 +1,7 @@
 
 from twisted.internet import task
 
+from pubbot import activity
 
 class Bot(object):
 
@@ -21,6 +22,9 @@ class Bot(object):
         self.update_task = task.LoopingCall(self.frame)
         self.update_task.start(0.1)
 
+        # Hack to bootstrap pubbot into doing something
+        self.queue_immediate_actions(activity.grief(self))
+
     def frame(self):
         self.execute_actions()
         self.send_player_position_and_look(self.x, self.stance, self.y, self.z, self.yaw, self.pitch, self.on_ground)
@@ -28,14 +32,16 @@ class Bot(object):
     def execute_actions(self):
         if self.actions:
             # Actually execute an action
-            nia = actions.pop(0).do()
+            actions = self.actions.pop(0).do()
 
-            # do() may return new things todo that are important: insert them into self.actions in the right place
-            if nia:
-                if isinstance(nia, tuple):
-                    for i in range(len(nia)-1, 0):
-                        self.actions.insert(0, nia[i])
-                else:
-                    self.actions.insert(0, nia)
+            # do() may return new things todo that are important: insert them into self.actions in the right place            
+            self.queue_immediate_actions(actions)
+
+    def queue_immediate_actions(self, actions):
+        if isinstance(actions, tuple):
+            for i in range(len(actions)-1, 0):
+                self.actions.insert(0, actions[i])
+        else:
+            self.actions.insert(0, actions)
 
 
