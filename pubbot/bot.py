@@ -34,8 +34,9 @@ class Bot(object):
             # Actually execute an action
             actions = self.actions.pop(0).do()
 
-            # do() may return new things todo that are important: insert them into self.actions in the right place            
-            self.queue_immediate_actions(actions)
+            # do() may return new things todo that are important: insert them into self.actions in the right place
+            if actions:
+                self.queue_immediate_actions(actions)
 
     def queue_immediate_actions(self, actions):
         if isinstance(actions, tuple):

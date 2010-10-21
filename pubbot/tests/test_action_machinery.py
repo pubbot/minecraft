@@ -17,4 +17,16 @@ class TestActionMachinery(TestCase):
         bot.queue_immediate_actions(a)
 
         self.failUnlessEqual(bot.actions, [a, b, c])
-        
+
+    def test_do_action(self):
+        bot = Bot(Mock())
+        a, b = Mock(), Mock()
+        a.do.return_value = b.do.return_value = None
+        bot.actions = [a,b]
+        bot.execute_actions()
+        bot.execute_actions()
+        self.failUnlessEqual(len(bot.actions), 0)
+
+    def test_do_action_empty_list(self):
+        bot = Bot(Mock())
+        bot.execute_actions()
