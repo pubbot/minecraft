@@ -16,6 +16,7 @@ class MinecraftReader(object):
     def dataReceived(self, data):
         #log.msg("DATA RECEIVED", data, len(data))
         self.data += data
+        #log.msg(len(self.data))
 
         if self.callback and len(self.data) >= self.length_wanted:
             callback, self.callback = self.callback, None
@@ -160,7 +161,7 @@ class MinecraftClientProtocol(Protocol):
         log.msg("Entering read loop")
         while True:
             packet_id = yield self.reader.read_packet_id()
-            log.msg("Got packet:", packet_id)
+            log.msg("Got packet: 0x%02x" % packet_id)
 
             if packet_id == 0x00:
                 self.on_keep_alive()
@@ -317,20 +318,21 @@ class MinecraftClientProtocol(Protocol):
 
             elif packet_id == 0x33:
                 x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
+                y = yield self.reader.read_short()
                 z = yield self.reader.read_int()
                 size_x = yield self.reader.read_byte()
                 size_y = yield self.reader.read_byte()
                 size_z = yield self.reader.read_byte()
                 compressed_chunk_size = yield self.reader.read_int()
+                log.msg("compressed_chunk_size is", compressed_chunk_size)
                 compressed_chunk = yield self.reader.read_raw(compressed_chunk_size)
-                self.on_map_chunk(self, x, y, z, slice_x, slice_y, slice_z, compressed_chunk_size, compressed_chunk)
+                self.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
 
             elif packet_id == 0x34:
                 chunk_x = yield self.reader.read_int()
                 chunk_z = yield self.reader.read_int()
                 array_size = yield self.reader.read_short()
-                coordinate_array = yield self.reader.read_raw(1 * array_size)
+                coordinate_array = yield self.reader.read_raw(2 * array_size)
                 type_array = yield self.reader.read_raw(1 * array_size)
                 metadata_array = yield self.reader.read_raw(1 * array_size)
                 self.on_multi_block_change(chunk_x, chunk_z, array_size, coordinate_array, type_array, metadata_array)
@@ -359,6 +361,8 @@ class MinecraftClientProtocol(Protocol):
             else:
                 self.send_disconnect("I'm sorry Dave, didn't understand that")
                 defer.returnValue(None)
+
+            log.msg("Packet processed")
 
     def on_keep_alive(self):
         self.send_keep_alive()
