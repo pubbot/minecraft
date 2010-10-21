@@ -27,7 +27,7 @@ class Bot(object):
 
     def frame(self):
         self.execute_actions()
-        self.send_player_position_and_look(self.x, self.stance, self.y, self.z, self.yaw, self.pitch, self.on_ground)
+        self.protocol.send_player_position_and_look(self.x, self.stance, self.y, self.z, self.yaw, self.pitch, self.on_ground)
 
     def execute_actions(self):
         if self.actions:

@@ -78,7 +78,7 @@ class MinecraftReader(object):
     def read_string(self):
         length = yield self.read_short()
         data = yield self.read_raw(length)
-        log.msg(">%ds" % length)
+        #log.msg(">%ds" % length)
         val = unpack(">%ds" % length, data)[0]
         defer.returnValue(val)
 
@@ -127,7 +127,7 @@ class MinecraftWriter(object):
             self.write_byte(0)
 
 
-class MinecraftClientProtocol(Protocol):
+class BaseMinecraftClientProtocol(Protocol):
 
     server_password = "Password"
 
@@ -161,7 +161,7 @@ class MinecraftClientProtocol(Protocol):
         log.msg("Entering read loop")
         while True:
             packet_id = yield self.reader.read_packet_id()
-            log.msg("Got packet: 0x%02x" % packet_id)
+            #log.msg("Got packet: 0x%02x" % packet_id)
 
             if packet_id == 0x00:
                 self.on_keep_alive()
@@ -362,7 +362,7 @@ class MinecraftClientProtocol(Protocol):
                 self.send_disconnect("I'm sorry Dave, didn't understand that")
                 defer.returnValue(None)
 
-            log.msg("Packet processed")
+            #log.msg("Packet processed")
 
     def on_keep_alive(self):
         self.send_keep_alive()
@@ -567,4 +567,23 @@ class MinecraftClientProtocol(Protocol):
         self.writer.write_string("I'm outta here")
 
         self.transport.loseConnection()
+
+
+from pubbot import bot
+
+class MinecraftClientProtocol(BaseMinecraftClientProtocol):
+
+    def __init__(self, username, password):
+        BaseMinecraftClientProtocol.__init__(self, username, password)
+        self.bot = bot.Bot(self)
+
+    def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
+        should_start = False
+        if self.state != "ready":
+            should_start = True
+
+        BaseMinecraftClientProtocol.on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground)
+
+        if should_start:
+            self.bot.start()
 
