@@ -569,12 +569,14 @@ class BaseMinecraftClientProtocol(Protocol):
 
 
 from pubbot import bot
+from pubbot import entities
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
 
     def __init__(self, username, password):
         BaseMinecraftClientProtocol.__init__(self, username, password)
         self.bot = bot.Bot(self)
+        self.entities = entities.Entities()
 
     def on_player_position(self, x, y, z):
         self.bot.x = x
@@ -599,4 +601,18 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         if should_start:
             self.bot.start()
 
+    def on_named_entity_spawn(self, eid, player_name, x, y, z, yaw, pitch, current_item):
+        self.entities.on_named_entity_spawn(eid, player_name, x, y, z, yaw, pitch, current_item)
+
+    def on_entity_relative_move(self, eid, x, y, z):
+        self.entities.on_entity_relative_move(eid, x, y, z)
+
+    def on_entity_look(self, eid, yaw, pitch):
+        self.entities.on_entity_look(eid, yaw, pitch)
+
+    def on_entity_look_and_relative_move(self, eid, x, y, z, yaw, pitch):
+        self.entities.on_entity_look_and_relative_move(eid, x, y, z, yaw, pitch)
+
+    def on_entity_teleport(self, eid, x, y, z, yaw, pitch):
+        self.entities.on_entity_teleport(eid, x, y, z, yaw, pitch)
 

@@ -31,6 +31,11 @@ class Bot(object):
     def frame(self):
         self.execute_actions()
 
+        if "Jc2k" in self.protocol.entities.names:
+            log.msg("found Jc2k!!")
+            e = self.protocol.entities.names["Jc2k"]
+            self.look_at(e.x, e.y, e.z)
+
         # Cap stance to 0.1 <= stance <= 1.65 or we get kicked
         if self.stance - self.y < 0.1:
             self.stance = self.y + 0.1
