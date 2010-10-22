@@ -1,6 +1,7 @@
-from math import atan2, sqrt, pi
+from math import atan2, cos, sin, sqrt, pi
 
 RAD2DEGREE = 180.0 / pi
+DEGREE2RAD = pi / 180.0
 
 class Vector(object):
 
@@ -12,7 +13,7 @@ class Vector(object):
         self.z = z
 
     def length(self):
-        return sqrt(self.x*self.x + self.y+self.y + self.z*self.z)
+        return sqrt(self.x*self.x + self.y*self.y + self.z*self.z)
 
     def normalize(self):
         length = self.length()
@@ -30,7 +31,7 @@ class Vector(object):
                 pitch = 270
         else:
             if self.x:
-                yaw = atan2(self.x * -1.0, self.z) * RAD2DEGREE
+                yaw = atan2(self.x, self.z) * RAD2DEGREE
             elif self.z > 0:
                 yaw = 90
             else:
@@ -39,7 +40,7 @@ class Vector(object):
         forward = sqrt(self.x*self.x + self.z*self.z)
         pitch = atan2(self.y, forward) * RAD2DEGREE
 
-        return (yaw+180, pitch)
+        return (yaw, pitch)
 
     def copy(self):
         return Vector(self.x, self.y, self.z)
@@ -91,4 +92,9 @@ def cross_product(a, b):
     return Vector(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
 
 
+def forward(yaw, pitch):
+    #PLZ FIXY ME
+    yaw *= DEGREE2RAD
+    pitch *= DEGREE2RAD
+    return Vector(-1 * cos(pitch) * cos(yaw), -sin(pitch), cos(pitch) * sin(yaw))
 

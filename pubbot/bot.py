@@ -2,7 +2,7 @@
 from twisted.internet import task
 from twisted.python import log
 
-from pubbot.vector import Vector
+from pubbot.vector import Vector, forward
 from pubbot import activity
 
 
@@ -35,24 +35,30 @@ class Bot(object):
     def look_at_nearest(self):
         nearby = []
         for entity in self.protocol.entities.names.itervalues():
-            length = (self.pos - entity.pos).length()
+            length = (entity.pos-self.pos).length()
             nearby.append((length, entity))
         if not nearby:
             return
         nearby.sort()
         pos = nearby[0][1].pos
         self.look_at(pos.x, pos.y, pos.z)
+        if nearby[0][0] > 5:
+            self.move((pos-self.pos).normalize())
+
 
     def frame(self):
         self.execute_actions()
 
         self.look_at_nearest()
 
+        #self.move(forward(self.yaw, self.pitch).normalize())
+        log.msg(self.x, self.y, self.z)
+
         # Cap stance to 0.1 <= stance <= 1.65 or we get kicked
-        if self.stance - self.y < 0.1:
-            self.stance = self.y + 0.1
+        if self.stance - self.y < 1:
+            self.stance = self.y + 1
         elif self.stance - self.y > 1.65:
-            self.stance = self.y + 1.65
+            self.stance = self.y + 1.6
 
         if self.pitch < 0:
             self.pitch += 360
@@ -65,8 +71,13 @@ class Bot(object):
         self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
 
     def look_at(self, x, y, z):
-        aim = Vector(self.x, self.y, self.z) - Vector(x, y, z)
+        aim = Vector(x, y, z) - self.pos
         self.yaw, self.pitch = aim.to_angles()
+
+    def move(self, pos):
+        self.x += pos.x
+        self.y += pos.y
+        self.z += pos.z
 
     def execute_actions(self):
         if self.actions:
