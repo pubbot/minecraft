@@ -13,20 +13,21 @@ class Options(usage.Options):
         ["host", "h", "localhost", "The host machine to connect to."],
         ]
 
-class MinecraftClientService(service.Service):
+class MinecraftClientService(service.MultiService):
 
     def __init__(self, username, password, host="localhost", port=25565):
         self.username = username
         self.password = password
         self.host = host
         self.port = port
+        service.MultiService.__init__(self)
 
     def startService(self):
         self.login()
-        service.Service.startService(self)
+        service.MultiService.startService(self)
 
     def stopService(self):
-        service.Service.stopService(self)
+        service.MultiService.stopService(self)
 
     @defer.inlineCallbacks
     def login(self):
@@ -35,7 +36,7 @@ class MinecraftClientService(service.Service):
             version, ticket, self.username, self.session_id, dummy = page.split(":")
         except:
             raise ValueError("Need to raise a better exception, but '%s' isnt a valid handshake.." % page)
-        self.factory = MinecraftClientFactory(self.username, self.password)
+        self.factory = MinecraftClientFactory(self.username, self.password, self.session_id)
         self.client = internet.TCPClient(self.host, self.port, self.factory)
         self.client.setServiceParent(self)
 

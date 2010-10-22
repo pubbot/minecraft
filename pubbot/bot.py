@@ -1,10 +1,10 @@
 
-from math import sqrt, atan2
-
 from twisted.internet import task
 from twisted.python import log
 
+from pubbot.vector import Vector
 from pubbot import activity
+
 
 class Bot(object):
 
@@ -21,6 +21,10 @@ class Bot(object):
 
         self.actions = []
 
+    @property
+    def pos(self):
+        return Vector(self.x, self.y, self.z)
+
     def start(self):
         self.update_task = task.LoopingCall(self.frame)
         self.update_task.start(0.1)
@@ -28,13 +32,21 @@ class Bot(object):
         # Hack to bootstrap pubbot into doing something
         self.queue_immediate_actions(activity.grief(self))
 
+    def look_at_nearest(self):
+        nearby = []
+        for entity in self.protocol.entities.names.itervalues():
+            length = (self.pos - entity.pos).length()
+            nearby.append((length, entity))
+        if not nearby:
+            return
+        nearby.sort()
+        pos = nearby[0][1].pos
+        self.look_at(pos.x, pos.y, pos.z)
+
     def frame(self):
         self.execute_actions()
 
-        if "Jc2k" in self.protocol.entities.names:
-            log.msg("found Jc2k!!")
-            e = self.protocol.entities.names["Jc2k"]
-            self.look_at(e.x, e.y, e.z)
+        self.look_at_nearest()
 
         # Cap stance to 0.1 <= stance <= 1.65 or we get kicked
         if self.stance - self.y < 0.1:
@@ -42,17 +54,19 @@ class Bot(object):
         elif self.stance - self.y > 1.65:
             self.stance = self.y + 1.65
 
+        if self.pitch < 0:
+            self.pitch += 360
+
+        # if self.yaw < 0:
+        #     self.yaw += 360
+
+        log.msg(self.yaw, self.pitch)
+
         self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
 
     def look_at(self, x, y, z):
-        x -= self.x
-        y -= self.y
-        z -= self.z
-
-        r = sqrt(x*x + z*z)
-
-        self.yaw = atan2(x, z)
-        self.pitch = atan2(y - 1.0, r)
+        aim = Vector(self.x, self.y, self.z) - Vector(x, y, z)
+        self.yaw, self.pitch = aim.to_angles()
 
     def execute_actions(self):
         if self.actions:

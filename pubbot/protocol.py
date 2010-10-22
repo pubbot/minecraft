@@ -131,9 +131,10 @@ class BaseMinecraftClientProtocol(Protocol):
 
     server_password = "Password"
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, session_id):
         self.username = username
         self.password = password
+        self.session_id = session_id
         self.state = "not-ready"
 
     def connectionMade(self):
@@ -566,8 +567,8 @@ from pubbot import entities
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
 
-    def __init__(self, username, password):
-        BaseMinecraftClientProtocol.__init__(self, username, password)
+    def __init__(self, username, password, session_id):
+        BaseMinecraftClientProtocol.__init__(self, username, password, session_id)
         self.bot = bot.Bot(self)
         self.entities = entities.Entities()
 
