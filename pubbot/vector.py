@@ -31,7 +31,7 @@ class Vector(object):
                 pitch = 270
         else:
             if self.x:
-                yaw = atan2(self.x, self.z) * RAD2DEGREE
+                yaw = atan2(self.x * -1.0, self.z) * RAD2DEGREE
             elif self.z > 0:
                 yaw = 90
             else:
@@ -40,7 +40,7 @@ class Vector(object):
         forward = sqrt(self.x*self.x + self.z*self.z)
         pitch = atan2(self.y, forward) * RAD2DEGREE
 
-        return (yaw, pitch)
+        return (yaw+180, pitch)
 
     def copy(self):
         return Vector(self.x, self.y, self.z)

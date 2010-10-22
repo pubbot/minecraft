@@ -160,6 +160,8 @@ class BaseMinecraftClientProtocol(Protocol):
         and resume when there is (see MinecraftReader for how that is implemented)
         """
         log.msg("Entering read loop")
+        previous_packet_id = -1
+
         while True:
             packet_id = yield self.reader.read_packet_id()
             #log.msg("Got packet: 0x%02x" % packet_id)
@@ -204,6 +206,11 @@ class BaseMinecraftClientProtocol(Protocol):
                 y = yield self.reader.read_int()
                 z = yield self.reader.read_int()
                 self.on_spawn_position(x, y, z)
+
+            elif packet_id == 0x10:
+                eid = yield self.reader.read_int()
+                item_id = yield self.reader.read_short()
+                #self.on_holding_change(eid, item_id)
 
             elif packet_id == 0x0D:
                 x = yield self.reader.read_double()
@@ -359,9 +366,11 @@ class BaseMinecraftClientProtocol(Protocol):
                 defer.returnValue(None)
 
             else:
+                log.msg("Got unknown packet_id: %x, Previous was: %x" % (packet_id, previous_packet_id))
                 self.send_disconnect("I'm sorry Dave, didn't understand that")
                 defer.returnValue(None)
 
+            previous_packet_id = packet_id
             #log.msg("Packet processed")
 
     def on_keep_alive(self):

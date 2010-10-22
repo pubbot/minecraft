@@ -52,7 +52,7 @@ class Bot(object):
         self.look_at_nearest()
 
         #self.move(forward(self.yaw, self.pitch).normalize())
-        log.msg(self.x, self.y, self.z)
+        #log.msg(self.x, self.y, self.z)
 
         # Cap stance to 0.1 <= stance <= 1.65 or we get kicked
         if self.stance - self.y < 1:
@@ -66,12 +66,12 @@ class Bot(object):
         # if self.yaw < 0:
         #     self.yaw += 360
 
-        log.msg(self.yaw, self.pitch)
+        #log.msg(self.yaw, self.pitch)
 
         self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
 
     def look_at(self, x, y, z):
-        aim = Vector(x, y, z) - self.pos
+        aim = self.pos - Vector(x, y, z)
         self.yaw, self.pitch = aim.to_angles()
 
     def move(self, pos):
