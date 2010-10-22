@@ -599,3 +599,4 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         if should_start:
             self.bot.start()
 
+

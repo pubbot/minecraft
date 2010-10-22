@@ -1,4 +1,6 @@
 
+from math import sqrt, atan2
+
 from twisted.internet import task
 from twisted.python import log
 
@@ -36,6 +38,16 @@ class Bot(object):
             self.stance = self.y + 1.65
 
         self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
+
+    def look_at(self, x, y, z):
+        x -= self.x
+        y -= self.y
+        z -= self.z
+
+        r = sqrt(x*x + z*z)
+
+        self.yaw = atan2(x, z)
+        self.pitch = atan2(y - 1.0, r)
 
     def execute_actions(self):
         if self.actions:
