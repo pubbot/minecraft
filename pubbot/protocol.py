@@ -384,13 +384,6 @@ class BaseMinecraftClientProtocol(Protocol):
         elif connection_hash == "+":
             pass
         else:
-            # If hash isnt "-" or "+" then we have an hash we need to pass to the minecraft servers to authenticate this user
-            page = yield getPage("http://www.minecraft.net/game/getversion.jsp?user=%s&password=%s&version=12" % (self.username, self.password))
-            try:
-                version, ticket, self.username, self.session_id, dummy = page.split(":")
-            except:
-                raise ValueError("Need to raise a better exception, but '%s' isnt a valid handshake.." % page)
-
             # Name verification call...
             confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash))
             if confirmation != "OK":

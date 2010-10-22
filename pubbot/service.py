@@ -1,6 +1,7 @@
-from twisted.application import service
+from twisted.application import service, internet
+from twisted.internet import defer
 from twisted.python import usage
-from twisted.application.internet import TCPClient
+from twisted.web.client import getPage
 
 from pubbot.client import MinecraftClientFactory
 
@@ -12,11 +13,34 @@ class Options(usage.Options):
         ["host", "h", "localhost", "The host machine to connect to."],
         ]
 
-def makeService(options):
-    s = service.MultiService()
+class MinecraftClientService(service.Service):
 
-    c = TCPClient(options["host"], int(options["port"]), MinecraftClientFactory(options["username"], options["password"]))
-    c.setServiceParent(s)
+    def __init__(self, username, password, host="localhost", port=25565):
+        self.username = username
+        self.password = password
+        self.host = host
+        self.port = port
 
-    return s
+    def startService(self):
+        self.login()
+        service.Service.startService(self)
+
+    def stopService(self):
+        service.Service.stopService(self)
+
+    @defer.inlineCallbacks
+    def login(self):
+        page = yield getPage("http://www.minecraft.net/game/getversion.jsp?user=%s&password=%s&version=12" % (self.username, self.password))
+        try:
+            version, ticket, self.username, self.session_id, dummy = page.split(":")
+        except:
+            raise ValueError("Need to raise a better exception, but '%s' isnt a valid handshake.." % page)
+        self.factory = MinecraftClientFactory(self.username, self.password)
+        self.client = internet.TCPClient(self.host, self.port, self.factory)
+        self.client.setServiceParent(self)
+
+
+
+def makeService(cfg):
+    return MinecraftClientService(cfg["username"], cfg["password"], cfg["host"], cfg["port"])
 
