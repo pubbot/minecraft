@@ -38,15 +38,19 @@ class Bot(object):
             length = (entity.pos-self.pos).length()
             nearby.append((length, entity))
         if not nearby:
+            log.msg("No one is nearby")
             return
+        log.msg(len(nearby))
         nearby.sort()
+        log.msg(nearby[0][1].player_name, nearby[0][0])
         pos = nearby[0][1].pos
         self.look_at(pos.x, pos.y, pos.z)
-        if nearby[0][0] > 5:
+        if nearby[0][0] > 5 or nearby[0][0] < -5:
             self.move((pos-self.pos).normalize())
 
 
     def frame(self):
+        log.msg("Frame called")
         self.execute_actions()
 
         self.look_at_nearest()
@@ -67,6 +71,8 @@ class Bot(object):
         #     self.yaw += 360
 
         #log.msg(self.yaw, self.pitch)
+
+        log.msg(on_ground)
 
         self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
 

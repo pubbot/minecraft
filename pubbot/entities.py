@@ -35,6 +35,10 @@ class NamedEntity(BaseEntity):
         self.current_item = current_item
 
 
+    def move(self, x, y, z):
+        super(NamedEntity, self).move(x, y, z)
+        log.msg("%s is moving" % self.player_name)
+
 class Entities(object):
 
     def __init__(self):

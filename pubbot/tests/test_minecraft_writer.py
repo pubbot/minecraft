@@ -4,7 +4,7 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import defer
 
-from pubbot.protocol import MinecraftWriter
+from pubbot.writer import MinecraftWriter
 
 
 class MockTransport(object):
