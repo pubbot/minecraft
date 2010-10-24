@@ -57,7 +57,7 @@ class BaseMinecraftReader(object):
             defer.returnValue(False)
 
 
-class MinecraftReader(object):
+class MinecraftReader(BaseMinecraftReader):
 
     def __init__(self):
         self.length_wanted = 0
@@ -88,22 +88,22 @@ class MinecraftReader(object):
         defer.returnValue(data)
 
 
-class NBTReader(object):
-
-    self.tagmap = {
-        0x01: self.read_byte,
-        0x02: self.read_short,
-        0x03: self.read_int,
-        0x04: self.read_long,
-        0x05: self.read_float,
-        0x06: self.read_double,
-        0x07: self.read_byte_array,
-        0x08: self.read_string,
-        0x09: self.read_list,
-        0x0A: self.read_dict,
-        }
+class NBTReader(BaseMinecraftReader):
 
     def __init__(self, fp):
+        self.tagmap = {
+            0x01: self.read_byte,
+            0x02: self.read_short,
+            0x03: self.read_int,
+            0x04: self.read_long,
+            0x05: self.read_float,
+            0x06: self.read_double,
+            0x07: self.read_byte_array,
+            0x08: self.read_string,
+            0x09: self.read_list,
+            0x0A: self.read_dict,
+            }
+
         self.fp = gzip.GzipFile(fileobj=fp, mode='rb')
 
     def read_raw(self, num_bytes):
@@ -114,7 +114,7 @@ class NBTReader(object):
         length = yield self.read_int()
         data = []
         for i in range(length):
-            data.append(yield self.read_byte())
+            data.append((yield self.read_byte()))
         defer.returnValue(data)
 
     @defer.inlineCallbacks
@@ -124,7 +124,7 @@ class NBTReader(object):
 
         data = []
         for i in range(length):
-            data.append(yield self.tagmap[tag]())
+            data.append((yield self.tagmap[tag]()))
 
         defer.returnValue(data)
 

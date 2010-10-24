@@ -1,10 +1,12 @@
 
+from StringIO import StringIO
+
 from twisted.internet import defer, task
 from twisted.internet.protocol import Protocol
 from twisted.web.client import getPage
 from twisted.python import log
 
-from pubbot.reader import Reader
+from pubbot.reader import Reader, NBTReader
 from pubbot.writer import Writer
 
 
@@ -238,8 +240,11 @@ class BaseMinecraftClientProtocol(Protocol):
                 y = yield self.reader.read_short()
                 z = yield self.reader.read_int()
                 payload_size = yield self.reader.read_short()
-                payload = yield self.reader.read_raw(payload_size)
-                self.on_complex_entities(x, y, z, payload_size, payload)
+                payload_raw = yield self.reader.read_raw(payload_size)
+
+                payload = NBTReader(StringIO(payload_raw)).read_dict()
+
+                self.on_complex_entity(x, y, z, payload)
 
             elif packet_id == 0xFF:
                 reason = yield self.reader.read_string()
@@ -360,7 +365,7 @@ class BaseMinecraftClientProtocol(Protocol):
     def on_block_change(self, x, y, z, type, metadata):
         pass
 
-    def on_complex_entities(self, x, y, z, payload_size, payload):
+    def on_complex_entity(self, x, y, z, payload):
         pass
 
     def on_kick(self, reason):
