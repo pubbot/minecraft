@@ -6,8 +6,8 @@ from twisted.internet.protocol import Protocol
 from twisted.web.client import getPage
 from twisted.python import log
 
-from pubbot.reader import Reader, NBTReader
-from pubbot.writer import Writer
+from pubbot.reader import MinecraftReader, NBTReader
+from pubbot.writer import MinecraftWriter
 
 
 class BaseMinecraftClientProtocol(Protocol):
@@ -281,7 +281,7 @@ class BaseMinecraftClientProtocol(Protocol):
             pass
         else:
             # Name verification call...
-            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash))
+            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash.encode("UTF-8")))
             if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
@@ -466,11 +466,6 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         BaseMinecraftClientProtocol.__init__(self, username, password, session_id)
         self.bot = bot.Bot(self)
         self.entities = entities.Entities()
-
-    def on_player_position(self, x, y, z):
-        self.bot.x = x
-        self.bot.y = y
-        self.bot.z = z
 
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
         should_start = False

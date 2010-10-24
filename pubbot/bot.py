@@ -72,7 +72,7 @@ class Bot(object):
 
         #log.msg(self.yaw, self.pitch)
 
-        log.msg(on_ground)
+        log.msg(self.on_ground)
 
         self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
 
