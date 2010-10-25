@@ -51,6 +51,8 @@ class Bot(object):
 
     def frame(self):
         log.msg("Frame called")
+        self.on_ground = False
+
         self.execute_actions()
 
         self.look_at_nearest()
@@ -74,7 +76,9 @@ class Bot(object):
 
         log.msg(self.on_ground)
 
-        self.protocol.send_player_position_and_look(self.x, self.y, self.stance, self.z, self.yaw, self.pitch, self.on_ground)
+        self.protocol.send_player(self.on_ground)
+        self.protocol.send_player_position(self.x, self.y, self.stance, self.z, self.on_ground)
+        self.protocol.send_player_look(self.yaw, self.pitch, self.on_ground)
 
     def look_at(self, x, y, z):
         aim = self.pos - Vector(x, y, z)
@@ -84,6 +88,7 @@ class Bot(object):
         self.x += pos.x
         self.y += pos.y
         self.z += pos.z
+        self.on_ground = True
 
     def execute_actions(self):
         if self.actions:

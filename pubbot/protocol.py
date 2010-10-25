@@ -242,7 +242,8 @@ class BaseMinecraftClientProtocol(Protocol):
                 payload_size = yield self.reader.read_short()
                 payload_raw = yield self.reader.read_raw(payload_size)
 
-                payload = NBTReader(StringIO(payload_raw)).read_dict()
+                payload = yield NBTReader(StringIO(payload_raw)).read_nbt()
+                print payload
 
                 self.on_complex_entity(x, y, z, payload)
 

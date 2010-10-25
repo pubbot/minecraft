@@ -1,4 +1,6 @@
 from struct import unpack
+import gzip
+
 from twisted.internet import defer
 
 class BaseMinecraftReader(object):
@@ -107,7 +109,9 @@ class NBTReader(BaseMinecraftReader):
         self.fp = gzip.GzipFile(fileobj=fp, mode='rb')
 
     def read_raw(self, num_bytes):
-        return defer.succeed(fp.read(num_bytes))
+        result = self.fp.read(num_bytes)
+        #return defer.succeed(self.fp.read(num_bytes))
+        return defer.succeed(result)
 
     @defer.inlineCallbacks
     def read_byte_array(self):
@@ -140,4 +144,12 @@ class NBTReader(BaseMinecraftReader):
             data[name] = yield self.tagmap[tag]()
 
         defer.returnValue(data)
+
+    @defer.inlineCallbacks
+    def read_nbt(self):
+        tag = yield self.read_byte()
+        assert tag == 0x0A
+        name = yield self.read_string()
+        data = yield self.tagmap[tag]()
+        defer.returnValue((name, data))
 
