@@ -403,12 +403,13 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_packet_id(0x0A)
         self.writer.write_bool(on_ground)
 
-    def send_player_position(self, s, y, stance, z, on_ground):
+    def send_player_position(self, x, y, stance, z, on_ground):
         self.writer.write_packet_id(0x0B)
         self.writer.write_double(x)
         self.writer.write_double(y)
         self.writer.write_double(stance)
         self.writer.write_double(z)
+        self.writer.write_bool(on_ground)
 
     def send_player_look(self, yaw, pitch, on_ground):
         self.writer.write_packet_id(0x0C)
