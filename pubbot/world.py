@@ -1,14 +1,13 @@
 
 import os, zlib
 
+from pubbot.vector import Vector
 
 class Chunk(object):
 
     def __init__(self, x, y, z, sx, sy, sz, payload):
         # Record start of chunk.
-        self.x = x
-        self.y = y
-        self.z = z
+        self.pos = Vector(x, y, z)
 
         # Record size of this chunk
         self.sx = sx
@@ -23,6 +22,23 @@ class Chunk(object):
                     index = y + (z*128) + (x*128*16)
                     block_type = payload[index]
                     self.blocks[(x, y, z)] = block_type
+
+    def get_relative_block(self, vector):
+        return self.blocks[(x, y, z)]
+
+    def get_absolute_block(self, vector):
+        rel = vector - self.pos
+        return self.get_relative_block(rel)
+
+    def point_in_chunk(self, vector):
+        if vector.x < self.pos.x or self.pos.x + self.sx  <= vector.x:
+             return False
+        if vector.y < self.pos.y or self.pos.z + self.sy <= vector.y:
+            return False
+        if vector.z < self.pos.z or self.pos.z + self.sz <= vector.z:
+            return False
+
+        return True
 
 
 class World(object):
@@ -39,6 +55,12 @@ class World(object):
         open("/tmp/chunks/%d" % self.dump_serial, "wb").write(payload)
         open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (self.dump_serial, x, y, z, sx, sy, sz)]) + "\n")
         self.dump_serial += 1
+
+    def get_chunk(self, pos):
+        for chunk in self.chunls:
+            if chunk.point_in_chunk(pos):
+                return chunk
+        raise KeyError("Cannot find position %s in world!" % pos)
 
     def on_pre_chunk(self, x, z, mode):
         pass
