@@ -459,8 +459,7 @@ class BaseMinecraftClientProtocol(Protocol):
         self.transport.loseConnection()
 
 
-from pubbot import bot
-from pubbot import entities
+from pubbot import bot, entities, world
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
 
@@ -468,6 +467,7 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         BaseMinecraftClientProtocol.__init__(self, username, password, session_id)
         self.bot = bot.Bot(self)
         self.entities = entities.Entities()
+        self.world = world.World()
 
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
         should_start = False
@@ -501,4 +501,16 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
 
     def on_entity_teleport(self, eid, x, y, z, yaw, pitch):
         self.entities.on_entity_teleport(eid, x, y, z, yaw, pitch)
+
+    def on_pre_chunk(self, x, z, mode):
+        self.world.on_pre_chunk(x, z, mode)
+
+    def on_map_chunk(self, x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk):
+        self.world.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
+
+    def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
+        self.world.on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array)
+
+    def on_block_change(self, x, y, z, type, metadata):
+        self.worlf.on_block_change(x, y, z, type, metadata)
 
