@@ -1,7 +1,10 @@
 
 from twisted.internet.protocol import ClientFactory
+from twisted.manhole import telnet
+from twisted.internet import reactor
 
 from pubbot.protocol import MinecraftClientProtocol
+
 
 class MinecraftClientFactory(ClientFactory):
 
@@ -12,5 +15,15 @@ class MinecraftClientFactory(ClientFactory):
         #super(MinecraftClientFactory, self).__init__()
 
     def buildProtocol(self, addr):
-        return MinecraftClientProtocol(self.username, self.password, self.session_id)
+        p = MinecraftClientProtocol(self.username, self.password, self.session_id)
+
+        factory = telnet.ShellFactory()
+        port = reactor.listenTCP(2000, factory)
+        factory.namespace['protocol'] = p
+        factory.username = self.username
+        factory.password = self.password
+
+        self.shell = port
+
+        return p
 

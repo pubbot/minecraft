@@ -41,7 +41,6 @@ class MinecraftClientService(service.MultiService):
         self.client.setServiceParent(self)
 
 
-
 def makeService(cfg):
     return MinecraftClientService(cfg["username"], cfg["password"], cfg["host"], cfg["port"])
 
