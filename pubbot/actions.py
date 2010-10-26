@@ -67,6 +67,31 @@ class MoveTo(Action):
         return self
 
 
+class Mine(Action):
+
+    def __init__(self, bot, pos):
+        super(Mine, self).__init__(bot)
+        self.pos = pos
+        self.status = 0
+
+    def do(self):
+        self.bot.send_player_digging(self.status, self.pos.x, self.pos.y, self.pos.z, 0)
+        self.status = status + 1
+        if self.status < 5:
+            return self
+
+
+class Build(Action):
+
+    def __init__(self, bot, pos, block_type):
+        super(Build, self).__init__(bot)
+        self.pos = pos
+        self.block_type = block_type
+
+    def do(self):
+        self.bot.send_player_block_placement(self, self.block_type, self.pos.x, self.pos.y, self.pos.z, 0)
+
+
 class Functor(Action):
 
     def __init__(self, bot, func, *args, **kwargs):
