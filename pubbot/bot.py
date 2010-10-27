@@ -38,19 +38,19 @@ class Bot(object):
             length = (entity.pos-self.pos).length()
             nearby.append((length, entity))
         if not nearby:
-            log.msg("No one is nearby")
+            #log.msg("No one is nearby")
             return
-        log.msg(len(nearby))
+        #log.msg(len(nearby))
         nearby.sort()
-        log.msg(nearby[0][1].player_name, nearby[0][0])
+        #log.msg(nearby[0][1].player_name, nearby[0][0])
         pos = nearby[0][1].pos
         self.look_at(pos.x, pos.y, pos.z)
-        if nearby[0][0] > 5 or nearby[0][0] < -5:
-            self.move((pos-self.pos).normalize())
+        #if nearby[0][0] > 5 or nearby[0][0] < -5:
+        #    self.move((pos-self.pos).normalize())
 
 
     def frame(self):
-        log.msg("Frame called")
+        #log.msg("Frame called")
         self.on_ground = False
 
         self.execute_actions()
@@ -74,7 +74,7 @@ class Bot(object):
 
         #log.msg(self.yaw, self.pitch)
 
-        log.msg(self.on_ground)
+        #log.msg(self.on_ground)
 
         self.protocol.send_player(self.on_ground)
         self.protocol.send_player_position(self.x, self.y, self.stance, self.z, self.on_ground)
