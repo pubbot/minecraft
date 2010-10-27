@@ -70,17 +70,36 @@ class MoveTo(Action):
 class Dig(Action):
 
     def __init__(self, bot, pos):
-        super(Mine, self).__init__(bot)
+        super(Dig, self).__init__(bot)
         self.pos = pos
-        self.stages = [0, 1, 3]
+        self.stage = "start"
+        self.calls = {
+            "start": self.do_start,
+            "mining": self.do_mine,
+            "destroy": self.do_destroy,
+            }
 
-    def do(self):
-        status = self.stages.pop(0)
+    def do_start(self):
+        self.bot.protocol.send_holding_change(0, 116)
+        self.mine(0)
+        self.stage = "mining"
+        self.timer = 20
+        return self
+
+    def do_mine(self):
+        self.mine(1)
+        self.timer -= 1
+        return self
+
+    def do_destroy(self):
+        self.mine(3)
+        self.bot.protocol.send_holding_change(0, 0)
+
+    def mine(self, status):
         self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 0)
 
-        # If there are still unfinished mining steps, requeue this task
-        if self.stages:
-            return self
+    def do(self):
+        return self.calls[self.stage]()
 
 
 class Build(Action):
@@ -91,7 +110,7 @@ class Build(Action):
         self.block_type = block_type
 
     def do(self):
-        self.bot.protocol.send_player_block_placement(self, self.block_type, self.pos.x, self.pos.y, self.pos.z, 0)
+        self.bot.protocol.send_player_block_placement(self.block_type, self.pos.x, self.pos.y, self.pos.z, 0)
 
 
 class Functor(Action):
