@@ -1,4 +1,4 @@
-
+from math import floor
 from StringIO import StringIO
 
 from twisted.internet import defer, task
@@ -433,18 +433,18 @@ class BaseMinecraftClientProtocol(Protocol):
         assert face >= 0 and face <= 5
         self.writer.write_packet_id(0x0E)
         self.writer.write_byte(status)
-        self.writer.write_int(x)
-        self.writer.write_byte(y)
-        self.writer.write_int(z)
+        self.writer.write_int(floor(x))
+        self.writer.write_byte(floor(y))
+        self.writer.write_int(floor(z))
         self.writer.write_byte(face)
 
     def send_player_block_placement(self, block_id, x, y, z, direction):
         assert direction >= 0 and direction <= 5
         self.writer.write_packet_id(0x0F)
         self.writer.write_short(block_id)
-        self.writer.write_int(x)
-        self.writer.write_byte(y)
-        self.writer.write_int(z)
+        self.writer.write_int(floor(x))
+        self.writer.write_byte(floor(y))
+        self.writer.write_int(floor(z))
         self.writer.write_byte(direction)
 
     def send_holding_change(self, unused, block_id):
@@ -509,8 +509,8 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         self.world.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
-        self.world.on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array)
+        self.world.on_multi_block_change(chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array)
 
     def on_block_change(self, x, y, z, type, metadata):
-        self.worlf.on_block_change(x, y, z, type, metadata)
+        self.world.on_block_change(x, y, z, type, metadata)
 
