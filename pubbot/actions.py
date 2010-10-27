@@ -67,17 +67,19 @@ class MoveTo(Action):
         return self
 
 
-class Mine(Action):
+class Dig(Action):
 
     def __init__(self, bot, pos):
         super(Mine, self).__init__(bot)
         self.pos = pos
-        self.status = 0
+        self.stages = [0, 1, 3]
 
     def do(self):
-        self.bot.protocol.send_player_digging(self.status, self.pos.x, self.pos.y, self.pos.z, 0)
-        self.status = status + 1
-        if self.status < 5:
+        status = self.stages.pop(0)
+        self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 0)
+
+        # If there are still unfinished mining steps, requeue this task
+        if self.stages:
             return self
 
 
