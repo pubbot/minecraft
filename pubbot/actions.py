@@ -80,7 +80,7 @@ class Dig(Action):
             }
 
     def do_start(self):
-        self.bot.protocol.send_holding_change(0, 116)
+        self.bot.protocol.send_holding_change(0, 0x116)
         self.mine(0)
         self.stage = "mining"
         self.timer = 20
