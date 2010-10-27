@@ -1,4 +1,4 @@
-from math import atan2, cos, sin, sqrt, pi
+from math import atan2, cos, sin, sqrt, pi, floor
 
 RAD2DEGREE = 180.0 / pi
 DEGREE2RAD = pi / 180.0
@@ -41,6 +41,9 @@ class Vector(object):
         pitch = atan2(self.y, forward) * RAD2DEGREE
 
         return (yaw+180, pitch)
+
+    def floor(self):
+        return Vector(int(floor(self.x)), int(floor(self.y)), int(floor(self.z)))
 
     def copy(self):
         return Vector(self.x, self.y, self.z)

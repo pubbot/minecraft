@@ -5,6 +5,8 @@ from pubbot.vector import Vector
 
 class Chunk(object):
 
+    __slots__ = ("pos", "sx", "sy", "sz", "blocks")
+
     def __init__(self, x, y, z, sx, sy, sz, payload):
         # Record start of chunk.
         self.pos = Vector(x, y, z)
@@ -17,14 +19,15 @@ class Chunk(object):
         self.blocks = {}
 
         for x in range(sx+1):
-            for z in range(sy+1):
-                for y in range(sz+1):
+            for z in range(sz+1):
+                for y in range(sy+1):
                     index = y + (z*128) + (x*128*16)
-                    block_type = payload[index]
+                    block_type = ord(payload[index])
                     self.blocks[(x, y, z)] = block_type
 
     def get_relative_block(self, vector):
-        return self.blocks[(x, y, z)]
+        v = vector.floor()
+        return self.blocks[(v.x, v.y, v.z)]
 
     def get_absolute_block(self, vector):
         rel = vector - self.pos
@@ -56,8 +59,11 @@ class World(object):
         open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (self.dump_serial, x, y, z, sx, sy, sz)]) + "\n")
         self.dump_serial += 1
 
+    def get_block(self, pos):
+        return self.get_chunk(pos).get_absolute_block(pos)
+
     def get_chunk(self, pos):
-        for chunk in self.chunls:
+        for chunk in self.chunks:
             if chunk.point_in_chunk(pos):
                 return chunk
         raise KeyError("Cannot find position %s in world!" % pos)

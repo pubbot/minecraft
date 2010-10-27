@@ -80,6 +80,11 @@ class Dig(Action):
             }
 
     def do_start(self):
+        block = self.bot.protocol.world.get_block(self.pos)
+        if block == 0:
+            log.msg("Mine air? pff")
+            return
+
         self.bot.protocol.send_holding_change(0, 0x116)
         self.mine(0)
         self.stage = "mining"
@@ -89,6 +94,8 @@ class Dig(Action):
     def do_mine(self):
         self.mine(1)
         self.timer -= 1
+        if self.timer < 1:
+            self.stage = "destroy"
         return self
 
     def do_destroy(self):
