@@ -71,14 +71,16 @@ class MoveTo(Action):
 
 class Dig(Action):
 
-    def __init__(self, bot, pos):
+    def __init__(self, bot, pos, face=0):
         super(Dig, self).__init__(bot)
         self.pos = pos
+        self.face = face
         self.stage = "start"
         self.calls = {
             "start": self.do_start,
             "mining": self.do_mine,
             "destroy": self.do_destroy,
+            "finish": self.do_finish,
             }
 
     def do_start(self):
@@ -112,7 +114,6 @@ class Dig(Action):
         return self
 
     def do_destroy(self):
-        self.mine(1)
         self.mine(3)
 
         # un-animate arm
@@ -121,8 +122,19 @@ class Dig(Action):
         # stop holding a thing
         self.bot.protocol.send_holding_change(0, 0)
 
+        self.stage = "finish"
+
+        return self
+
+    def do_finish(self):
+        self.mine(2)
+
     def mine(self, status):
-        self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 5)
+        self.bot.protocol.send_player(True)
+        if status == 3:
+            self.bot.protocol.send_player_digging(1, self.pos.x, self.pos.y, self.pos.z, self.face)
+        self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, self.face)
+        self.bot.protocol.send_player(True)
 
     def do(self):
         self.bot.look_at(self.pos.x, self.pos.y, self.pos.z)
