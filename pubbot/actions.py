@@ -87,7 +87,14 @@ class Dig(Action):
             log.msg("Mine air? pff")
             return
 
+
+        # holda diamond pick-axe. TODO: Work out of spade or axe is better
         self.bot.protocol.send_holding_change(0, 0x116)
+
+        # animate arm
+        self.bot.protocol.send_arm_animation(True)
+
+        # actually mine
         self.mine(0)
         self.stage = "mining"
         self.timer = 20
@@ -102,6 +109,11 @@ class Dig(Action):
 
     def do_destroy(self):
         self.mine(3)
+
+        # un-animate arm
+        self.bot.protocol.send_arm_animation(False)
+
+        # stop holding a thing
         self.bot.protocol.send_holding_change(0, 0)
 
     def mine(self, status):
