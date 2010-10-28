@@ -242,8 +242,9 @@ class BaseMinecraftClientProtocol(Protocol):
                 payload_size = yield self.reader.read_short()
                 payload_raw = yield self.reader.read_raw(payload_size)
 
-                payload = yield NBTReader(StringIO(payload_raw)).read_nbt()
-                print payload
+                #payload = yield NBTReader(StringIO(payload_raw)).read_nbt()
+                #print payload
+                payload = {}
 
                 self.on_complex_entity(x, y, z, payload)
 
@@ -429,6 +430,7 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_bool(on_ground)
 
     def send_player_digging(self, status, x, y, z, face):
+        log.msg("dig", status, x, y, z, face)
         assert status >= 0 and status <= 3
         assert face >= 0 and face <= 5
         self.writer.write_packet_id(0x0E)
@@ -439,6 +441,7 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_byte(face)
 
     def send_player_block_placement(self, block_id, x, y, z, direction):
+        log.msg("place block", block_id, x, y, z, direction)
         assert direction >= 0 and direction <= 5
         self.writer.write_packet_id(0x0F)
         self.writer.write_short(block_id)
@@ -508,14 +511,18 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         self.entities.on_entity_teleport(eid, x, y, z, yaw, pitch)
 
     def on_pre_chunk(self, x, z, mode):
-        self.world.on_pre_chunk(x, z, mode)
+        #self.world.on_pre_chunk(x, z, mode)
+        pass
 
     def on_map_chunk(self, x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk):
-        self.world.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
+        #self.world.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
+        pass
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
-        self.world.on_multi_block_change(chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array)
+        #self.world.on_multi_block_change(chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array)
+        pass
 
     def on_block_change(self, x, y, z, type, metadata):
-        self.world.on_block_change(x, y, z, type, metadata)
+        #self.world.on_block_change(x, y, z, type, metadata)
+        pass
 

@@ -82,7 +82,7 @@ class Dig(Action):
             }
 
     def do_start(self):
-        block = self.bot.protocol.world.get_block(self.pos)
+        #block = self.bot.protocol.world.get_block(self.pos)
         #if block == 0:
         #    log.msg("Mine air? pff")
         #    return
@@ -97,7 +97,7 @@ class Dig(Action):
         # actually mine
         self.mine(0)
         self.stage = "mining"
-        self.timer = 20
+        self.timer = 50
         return self
 
     def do_mine(self):
@@ -112,6 +112,7 @@ class Dig(Action):
         return self
 
     def do_destroy(self):
+        self.mine(1)
         self.mine(3)
 
         # un-animate arm
@@ -121,7 +122,7 @@ class Dig(Action):
         self.bot.protocol.send_holding_change(0, 0)
 
     def mine(self, status):
-        self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 0)
+        self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 5)
 
     def do(self):
         self.bot.look_at(self.pos.x, self.pos.y, self.pos.z)
