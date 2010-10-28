@@ -83,16 +83,16 @@ class Dig(Action):
 
     def do_start(self):
         block = self.bot.protocol.world.get_block(self.pos)
-        if block == 0:
-            log.msg("Mine air? pff")
-            return
+        #if block == 0:
+        #    log.msg("Mine air? pff")
+        #    return
 
 
         # holda diamond pick-axe. TODO: Work out of spade or axe is better
         self.bot.protocol.send_holding_change(0, 0x116)
 
         # animate arm
-        self.bot.protocol.send_arm_animation(True)
+        self.bot.protocol.send_arm_animation(0, True)
 
         # actually mine
         self.mine(0)
@@ -103,15 +103,19 @@ class Dig(Action):
     def do_mine(self):
         self.mine(1)
         self.timer -= 1
+
+        self.bot.protocol.send_arm_animation(0, True)
+
         if self.timer < 1:
             self.stage = "destroy"
+
         return self
 
     def do_destroy(self):
         self.mine(3)
 
         # un-animate arm
-        self.bot.protocol.send_arm_animation(False)
+        self.bot.protocol.send_arm_animation(0, False)
 
         # stop holding a thing
         self.bot.protocol.send_holding_change(0, 0)
@@ -120,7 +124,7 @@ class Dig(Action):
         self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 0)
 
     def do(self):
-        self.bot.look_at(self.pos)
+        self.bot.look_at(self.pos.x, self.pos.y, self.pos.z)
         return self.calls[self.stage]()
 
 

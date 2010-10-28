@@ -455,7 +455,7 @@ class BaseMinecraftClientProtocol(Protocol):
     def send_arm_animation(self, unused, waving):
         self.writer.write_packet_id(0x12)
         self.writer.write_int(unused)
-        self.wrier.write_bool(waving)
+        self.writer.write_bool(waving)
 
     def send_disconnect(self, reason):
         self.writer.write_packet_id(0xFF)
