@@ -120,6 +120,7 @@ class Dig(Action):
         self.bot.protocol.send_player_digging(status, self.pos.x, self.pos.y, self.pos.z, 0)
 
     def do(self):
+        self.bot.look_at(self.pos)
         return self.calls[self.stage]()
 
 

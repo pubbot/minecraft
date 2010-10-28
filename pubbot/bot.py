@@ -53,9 +53,9 @@ class Bot(object):
         #log.msg("Frame called")
         self.on_ground = False
 
-        self.execute_actions()
-
         self.look_at_nearest()
+
+        self.execute_actions()
 
         #self.move(forward(self.yaw, self.pitch).normalize())
         #log.msg(self.x, self.y, self.z)
