@@ -1,3 +1,19 @@
+# Copyright 2010 John Carr
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Maths stuff. Totally a NIH, to try and learn stuff.
+
 from math import atan2, cos, sin, sqrt, pi, floor
 
 RAD2DEGREE = 180.0 / pi
@@ -96,7 +112,7 @@ def cross_product(a, b):
 
 
 def forward(yaw, pitch):
-    #PLZ FIXY ME
+    #FIXME: I completely don't work. Should have gone to uni instead of getting a coding job ;_;
     yaw *= DEGREE2RAD
     pitch *= DEGREE2RAD
     return Vector(-1 * cos(pitch) * cos(yaw), -sin(pitch), cos(pitch) * sin(yaw))

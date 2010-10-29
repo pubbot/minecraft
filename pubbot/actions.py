@@ -1,3 +1,19 @@
+# Copyright 2010 John Carr
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Simple actions or steps the bot can do
+
 from twisted.python import log
 
 
@@ -12,6 +28,8 @@ class Action(object):
 
 class Idle(Action):
 
+    """ I wait a certain number of game ticks """
+
     def __init__(self, bot, ticks):
         super(Idle, self).__init__(bot)
         self.ticks = ticks
@@ -24,6 +42,8 @@ class Idle(Action):
 
 class Say(Action):
 
+    """ I say things in chat """
+
     def __init__(self, bot, message):
         super(Say, self).__init__(bot)
         self.message = message
@@ -34,6 +54,8 @@ class Say(Action):
 
 
 class Teleport(Action):
+
+    """ If bot has ops, then I teleport to other players """
 
     def __init__(self, bot, target):
         super(Teleport, self).__init__(bot)
@@ -46,6 +68,8 @@ class Teleport(Action):
 
 
 class MoveTo(Action):
+
+    """ I would move to a coordinate, but John has been concentrating on mining """
 
     def __init__(self, bot, x, y, z):
         super(MoveTo, self).__init__(bot)
@@ -70,6 +94,8 @@ class MoveTo(Action):
 
 
 class Dig(Action):
+
+    """ I mine blocks """
 
     def __init__(self, bot, pos, face=0):
         super(Dig, self).__init__(bot)
@@ -144,6 +170,8 @@ class Dig(Action):
 
 class Build(Action):
 
+    """ I build blocks """
+
     def __init__(self, bot, pos, block_type):
         super(Build, self).__init__(bot)
         self.pos = pos
@@ -154,6 +182,8 @@ class Build(Action):
 
 
 class Functor(Action):
+
+    """ I let you call any function in the context of the actions framework """
 
     def __init__(self, bot, func, *args, **kwargs):
         super(Functor, self).__init__(bot)

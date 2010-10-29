@@ -1,3 +1,27 @@
+# Copyright 2010 John Carr
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# The approach to reading minecraft packets is deliberately evil
+# I'm using defer.inlineCallbacks which let me read from the pipe even
+# if data isnt there yet. Twisted implicitly pauses my read loop until
+# the data is there
+
+# This makes packet reading easier to follow, but there will be a
+# performance cost. I will care later, when the protocol is more stable
+# or performance is a problem
+
 from struct import unpack
 import gzip
 

@@ -1,3 +1,19 @@
+# Copyright 2010 John Carr
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Provides a world object which provides access to block data, which is segmented
+# by minecraft in to chunks
 
 import os, zlib
 
@@ -92,8 +108,8 @@ class Chunk(object):
         open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (i, self.x, self.y, self.z, self.sx, self.sy, self.sz)]) + "\n")
 
     def load_chunk(self, compressed_chunk):
-        # Loading chunks blocks network code and crushes pubbots FPS - do in a thread
-        # FIXME: Move to a threadpool?
+        # Attempted to run decompression in a thread, but in reality this is pointless thanks to GIL
+        # Running this is crushing pubbots FPS at startup
 
         def load_chunk(compressed_chunk):
             payload = zlib.decompress(compressed_chunk)

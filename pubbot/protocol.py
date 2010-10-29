@@ -1,3 +1,17 @@
+# Copyright 2010 John Carr
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from math import floor
 from StringIO import StringIO
 
@@ -11,6 +25,14 @@ from pubbot.writer import MinecraftWriter
 
 
 class BaseMinecraftClientProtocol(Protocol):
+
+    """
+    I am a basic implementation of the client protocol
+
+    I only ensure successful connection to the server, and do some of the heavy
+    lifting processing the protocol. My subclasses are responsible for actually 
+    implementing useful clients
+    """
 
     server_password = "Password"
 
@@ -470,6 +492,8 @@ class BaseMinecraftClientProtocol(Protocol):
 from pubbot import bot, entities, world
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
+
+    """ I am a concrete implementation of the client protocol, providing a simple bot """
 
     def __init__(self, username, password, session_id):
         BaseMinecraftClientProtocol.__init__(self, username, password, session_id)
