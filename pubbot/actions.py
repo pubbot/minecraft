@@ -91,7 +91,8 @@ class Dig(Action):
 
 
         # holda diamond pick-axe. TODO: Work out of spade or axe is better
-        self.bot.protocol.send_holding_change(0, 0x116)
+        item_id = 0x115
+        self.bot.protocol.send_holding_change(0, item_id)
 
         # animate arm
         self.bot.protocol.send_arm_animation(0, True)
@@ -99,7 +100,7 @@ class Dig(Action):
         # actually mine
         self.mine(0)
         self.stage = "mining"
-        self.timer = 50
+        self.timer = 10
         return self
 
     def do_mine(self):
