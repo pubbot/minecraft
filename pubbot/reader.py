@@ -58,6 +58,13 @@ class BaseMinecraftReader(object):
         else:
             defer.returnValue(False)
 
+    @defer.inlineCallbacks
+    def read_array(self, readfunc, number):
+        res = []
+        for i in range(number):
+            res.append((yield readfunc()))
+        defer.returnValue(res)
+
 
 class MinecraftReader(BaseMinecraftReader):
 

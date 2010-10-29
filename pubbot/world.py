@@ -1,13 +1,73 @@
 
 import os, zlib
 
+from twisted.internet import threads
+
 from pubbot.vector import Vector
+
+
+class Block(object):
+
+    __slots__ = ("pos", "kind", "metadata")
+
+    def __init__(self, pos, kind, metadata):
+        self.pos = pos
+        self.kind = kind
+        self.metadata = metadata
+
+    def get_face(self, observer):
+        """
+        Given the vector of an observer, work out which of my sides they can best see
+
+        Returns a list of faces they can see, with the nearest first
+
+        0    -Y
+        1    +Y
+        2    -Z
+        3    +Z
+        4    -X
+        5    +X
+        """
+        dir = self.pos - observer
+
+        # Discard the 3 faces we definitely can't see
+        xf = 4 if dir.x < 0 else 5
+        yf = 0 if dir.y < 0 else 1
+        zf = 2 if dir.z < 0 else 3
+
+        # Garys law: Largest magnitude of change in a vector component leads us to the nearest face
+        # Drop the sign first of all axis
+        if dir.x < 0:
+            dir.x *= -1
+        if dir.y < 0:
+            dir.y *= -1
+        if dir.z < 0:
+            dir.z *= -1
+
+        # Sort biggest first - as its such a small loop ive manually unrolled the loop
+        # Yet another thing about this code that will haunt me for years
+        if dir.z > dir.y:
+            if dir.y > dir.z:
+                return tuple(zf, yf, xf)
+            else:
+                return tuple(zf, xf, yf)
+        elif dir.y > dir.x:
+            if dir.x > dir.z:
+                return tuple(yf, xf, zf)
+            else:
+                return tuple(yf, zf, xf)
+        else:
+            if dir.z > dir.y:
+                return tuple(xf, zf, yf)
+            else:
+                return tuple(xf, yf, zf)
+
 
 class Chunk(object):
 
     __slots__ = ("pos", "sx", "sy", "sz", "blocks")
 
-    def __init__(self, x, y, z, sx, sy, sz, payload):
+    def __init__(self, x, y, z, sx, sy, sz):
         # Record start of chunk.
         self.pos = Vector(x, y, z)
 
@@ -18,12 +78,51 @@ class Chunk(object):
 
         self.blocks = {}
 
-        for x in range(sx+1):
-            for z in range(sz+1):
-                for y in range(sy+1):
-                    index = y + (z*128) + (x*128*16)
-                    block_type = ord(payload[index])
-                    self.blocks[(x, y, z)] = block_type
+    def dump_chunk(self, payload):
+        if not os.path.exists("/tmp/chunks"):
+            os.makedirs("/tmp/chunks")
+
+        path = "/tmp/chunks/0"
+        i = 0
+        while not os.path.exists(path):
+            path = os.path.join("/tmp/chunks", i)
+            i = i + 1
+
+        open(path, "wb").write(payload)
+        open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (i, self.x, self.y, self.z, self.sx, self.sy, self.sz)]) + "\n")
+
+    def load_chunk(self, compressed_chunk):
+        # Loading chunks blocks network code and crushes pubbots FPS - do in a thread
+        # FIXME: Move to a threadpool?
+
+        def load_chunk(compressed_chunk):
+            payload = zlib.decompress(compressed_chunk)
+
+            self.blocks = {}
+            for x in range(self.sx+1):
+                for z in range(self.sz+1):
+                    for y in range(self.sy+1):
+                        index = y + (z*128) + (x*128*16)
+                        kind = ord(payload[index])
+                        self.blocks[(x, y, z)] = Block(Vector(x, y, z), kind, 0)
+
+        return threads.deferToThread(load_chunk, compressed_chunk)
+
+    def multi_change(self, array_size, coords, kinds, metadatas):
+        for i in range(array_size):
+             # coord is a short comprised of 4 bits of X, 4 bits of Z and 8 bits of Y
+             coord = coords[i]
+             kind = kinds[i]
+             metadata = metadatas[i]
+
+             #b = self.get_relative_block(Vector(x, y, z))
+             #b.kind = kind
+             #b.metadata = metadata
+
+    def change(self, pos, kind, metadata):
+        b = self.get_absolute_block(pos)
+        b.kind = kind
+        b.metadata = metadata
 
     def get_relative_block(self, vector):
         v = vector.floor()
@@ -52,13 +151,6 @@ class World(object):
 
         self.chunks = []
 
-    def dump_map_chunk(self, x, y, z, sx, sy, sz, payload):
-        if not os.path.exists("/tmp/chunks"):
-            os.makedirs("/tmp/chunks")
-        open("/tmp/chunks/%d" % self.dump_serial, "wb").write(payload)
-        open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (self.dump_serial, x, y, z, sx, sy, sz)]) + "\n")
-        self.dump_serial += 1
-
     def get_block(self, pos):
         return self.get_chunk(pos).get_absolute_block(pos)
 
@@ -66,23 +158,23 @@ class World(object):
         for chunk in self.chunks:
             if chunk.point_in_chunk(pos):
                 return chunk
-        raise KeyError("Cannot find position %s in world!" % pos)
+        raise KeyError("No chunk for region %s" % pos)
 
     def on_pre_chunk(self, x, z, mode):
+        #FIXME: Save incoming chunks to disk and load them in and out of memory depending on where in map we are?
         pass
 
     def on_map_chunk(self, x, y, z, sx, sy, sz, compressed_chunk_size, compressed_chunk):
-        payload = zlib.decompress(compressed_chunk)
-
-        if self.dump_map_chunks:
-            self.dump_map_chunk(x, y, z, sx, sy, sz, payload)
-
-        self.chunks.append(Chunk(x, y, z, sx, sy, sz, payload))
+        c = Chunk(x, y, z, sx, sy, sz)
+        c.load_chunk(compressed_chunk)
+        self.chunks.append(c)
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
-        pass
+        pos = Vector(chunk_x * 16, 0, chunk_z * 16)
+        c = self.get_chunk(pos)
+        c.multi_change(array_size, coord_array, type_array, metadata_array)
 
     def on_block_change(self, x, y, z, type, metadata):
-        pass
-
+        pos = Vector(x, y, z)
+        self.get_chunk(pos).change(pos, type, metadata)
 
