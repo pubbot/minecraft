@@ -309,7 +309,7 @@ class BaseMinecraftClientProtocol(Protocol):
             if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
-        self.send_login_request(2, self.username, self.server_password)
+        self.send_login_request(3, self.username, self.server_password, 0, 0)
 
     def on_chat_message(self, message):
         """
@@ -402,11 +402,13 @@ class BaseMinecraftClientProtocol(Protocol):
     def send_keep_alive(self):
         self.writer.write_packet_id(0x00)
 
-    def send_login_request(self, protocol_version, username, password):
+    def send_login_request(self, protocol_version, username, password, unknown1, unknown2):
         self.writer.write_packet_id(0x01)
         self.writer.write_int(protocol_version)
         self.writer.write_string(username)
         self.writer.write_string(password)
+        self.writer.write_long(unknown1)
+        self.writer.write_byte(unknown2)
 
     def send_handshake(self, username):
         self.writer.write_packet_id(0x02)
