@@ -19,7 +19,7 @@ blocks = {
     0x03: {
         "name": "sand",
         "preferred_tool": 0x115,
-        "time": {
+        "times": {
             0x00: 1.05,
             0x10d: 0.7,
             0x111: 0.49,
@@ -30,7 +30,7 @@ blocks = {
     0x0C: {
         "name": "sand",
         "preferred_tool": 0x115,
-        "time": {
+        "times": {
             0x00: 1.05,
             0x10d: 0.7,
             0x111: 0.49,
@@ -41,7 +41,7 @@ blocks = {
     0x0D: {
         "name": "gravel",
         "preferred_tool": 0x115,
-        "time": {
+        "times": {
             0x00: 1.19,
             0x10d: 0.74,
             0x111: 0.54,
@@ -54,7 +54,7 @@ blocks = {
     0x01: {
         "name": "stone",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 7.68,
             0x10e: 1.44,
             0x112: 0.89,
@@ -65,7 +65,7 @@ blocks = {
     0x04: {
         "name": "cobblestone",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 10.19,
             0x10e: 1.79,
             0x112: 1.04,
@@ -76,7 +76,7 @@ blocks = {
     0x10: {
         "name": "coal ore",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 15.22,
             0x10e: 2.54,
             0x112: 1.44,
@@ -87,7 +87,7 @@ blocks = {
     0x0f: {
         "name": "iron ore",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 15.22,
             0x10e: 15.22,
             0x112: 1.44,
@@ -98,7 +98,7 @@ blocks = {
     0x0e: {
         "name": "gold ore",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 15.22,
             0x10e: 15.22,
             0x112: 15.22,
@@ -109,7 +109,7 @@ blocks = {
     0x38: {
         "name": "diamond ore",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 15.22,
             0x10e: 15.22,
             0x112: 15.22,
@@ -120,7 +120,7 @@ blocks = {
     0x2A: {
         "name": "iron block",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 25.28,
             0x10e: 25.28,
             0x112: 2.19,
@@ -131,7 +131,7 @@ blocks = {
     0x29: {
         "name": "gold block",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 15.22,
             0x10e: 15.22,
             0x112: 15.22,
@@ -142,7 +142,7 @@ blocks = {
     0x39: {
         "name": "diamond block",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 25.28,
             0x10e: 25.28,
             0x112: 25.28,
@@ -153,7 +153,7 @@ blocks = {
     0x31: {
         "name": "obsidian",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 50.29,
             0x10e: 50.29,
             0x112: 50.29,
@@ -164,7 +164,7 @@ blocks = {
     0x35: {
         "name": "stairs",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 10.26,
             0x10e: 1.79,
             0x112: 1.04,
@@ -175,7 +175,7 @@ blocks = {
     0x3D: {
         "name": "furnace",
         "preferred_tool": 0x116,
-        "time": {
+        "times": {
             0x00: 17.67,
             0x10e: 5.52,
             0x112: 5.52,
@@ -188,7 +188,7 @@ blocks = {
     0x11: {
         "name": "log",
         "preferred_tool": 0x117,
-        "time": {
+        "times": {
             0x00: 3.34,
             0x10f: 1.79,
             0x113: 1.04,
@@ -199,7 +199,7 @@ blocks = {
     0x05: {
         "name": "wood",
         "preferred_tool": 0x117,
-        "time": {
+        "times": {
             0x00: 3.34,
             0x10f: 1.04,
             0x113: 1.04,
@@ -210,7 +210,7 @@ blocks = {
     0x3A: {
         "name": "workbench",
         "preferred_tool": 0x117,
-        "time": {
+        "times": {
             0x00: 4.06,
             0x10f: 4.06,
             0x113: 4.06,
@@ -221,7 +221,7 @@ blocks = {
     0x36: {
         "name": "chest",
         "preferred_tool": 0x117,
-        "time": {
+        "times": {
             0x00: 4.06,
             0x10f: 2.15,
             0x113: 1.21,
@@ -234,7 +234,7 @@ blocks = {
     0x14: {
         "name": "glass",
         "preferred_tool": 0x114,
-        "time": {
+        "times": {
             0x00: 0.74,
             0x10c: 0.58,
             0x110: 0.58,
@@ -245,7 +245,7 @@ blocks = {
     0x12: {
         "name": "leaves",
         "preferred_tool": 0x114,
-        "time": {
+        "times": {
             0x00: 0.59,
             0x10c: 0.5,
             0x110: 0.5,

@@ -42,7 +42,11 @@ class Block(object):
 
     @property
     def ftl(self):
-        return int(math.ceiling(self.ttl * 10))
+        return int(math.ceil(self.ttl * 10))
+
+    @property
+    def name(self):
+        return blocks[self.kind]["name"]
 
     def get_face(self, observer):
         """
