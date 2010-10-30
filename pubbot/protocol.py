@@ -78,6 +78,8 @@ class BaseMinecraftClientProtocol(Protocol):
                 unknown1 = yield self.reader.read_int()
                 unknown2 = yield self.reader.read_string()
                 unknown3 = yield self.reader.read_string()
+                unknown4 = yield self.reader.read_long()
+                unknown5 = yield self.reader.read_byte()
                 self.on_login_response(unknown1, unknown2, unknown3)
 
             elif packet_id == 0x02:
