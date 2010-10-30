@@ -125,21 +125,16 @@ class Chunk(object):
         open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (i, self.x, self.y, self.z, self.sx, self.sy, self.sz)]) + "\n")
 
     def load_chunk(self, compressed_chunk):
-        # Attempted to run decompression in a thread, but in reality this is pointless thanks to GIL
-        # Running this is crushing pubbots FPS at startup
+        payload = zlib.decompress(compressed_chunk)
 
-        def load_chunk(compressed_chunk):
-            payload = zlib.decompress(compressed_chunk)
-
-            self.blocks = {}
-            for x in range(self.sx+1):
-                for z in range(self.sz+1):
-                    for y in range(self.sy+1):
-                        index = y + (z*128) + (x*128*16)
-                        kind = ord(payload[index])
-                        self.blocks[(x, y, z)] = Block(Vector(x, y, z), kind, 0)
-
-        return threads.deferToThread(load_chunk, compressed_chunk)
+        self.blocks = {}
+        for x in range(self.sx+1):
+            for z in range(self.sz+1):
+                for y in range(self.sy+1):
+                    index = y + (z*128) + (x*128*16)
+                    #print index, len(payload)
+                    kind = ord(payload[index])
+                    self.blocks[(x, y, z)] = Block(Vector(x, y, z), kind, 0)
 
     def multi_change(self, array_size, coords, kinds, metadatas):
         for i in range(array_size):
