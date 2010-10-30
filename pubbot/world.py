@@ -15,11 +15,12 @@
 # Provides a world object which provides access to block data, which is segmented
 # by minecraft in to chunks
 
-import os, zlib
+import os, zlib, math
 
 from twisted.internet import threads
 
 from pubbot.vector import Vector
+from pubbot.blocks import blocks
 
 
 class Block(object):
@@ -30,6 +31,18 @@ class Block(object):
         self.pos = pos
         self.kind = kind
         self.metadata = metadata
+
+    @property
+    def preferred_tool(self):
+        return blocks[self.kind]["preferred_tool"]
+
+    @property
+    def ttl(self):
+        return blocks[self.kind]["times"][self.preferred_tool]
+
+    @property
+    def ftl(self):
+        return int(math.ceiling(self.ttl * 10))
 
     def get_face(self, observer):
         """

@@ -110,10 +110,10 @@ class Dig(Action):
             }
 
     def do_start(self):
-        #block = self.bot.protocol.world.get_block(self.pos)
-        #if block == 0:
-        #    log.msg("Mine air? pff")
-        #    return
+        block = self.bot.protocol.world.get_block(self.pos)
+        if block.kind == 0:
+            log.msg("Mine air? pff")
+            return
 
 
         # holda diamond pick-axe. TODO: Work out of spade or axe is better
