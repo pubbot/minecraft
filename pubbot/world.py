@@ -17,7 +17,7 @@
 
 import os, zlib, math
 
-from twisted.internet import threads
+from twisted.internet import threads, defer
 
 from pubbot.vector import Vector
 from pubbot.blocks import blocks
@@ -100,16 +100,21 @@ class Chunk(object):
 
     __slots__ = ("pos", "sx", "sy", "sz", "blocks")
 
-    def __init__(self, x, y, z, sx, sy, sz):
+    def __init__(self, x, y, z):
         # Record start of chunk.
         self.pos = Vector(x, y, z)
 
-        # Record size of this chunk
+        # Assume normal size
+        self.sx = 16
+        self.sy = 128
+        self.sz = 16
+
+        self.blocks = {}
+
+    def set_size(self, sx, sy, sz):
         self.sx = sx
         self.sy = sy
         self.sz = sz
-
-        self.blocks = {}
 
     def dump_chunk(self, payload):
         if not os.path.exists("/tmp/chunks"):
@@ -163,7 +168,7 @@ class Chunk(object):
         rel = vector - self.pos
         return self.get_relative_block(rel)
 
-    def point_in_chunk(self, vector):
+    def contains(self, vector):
         if vector.x < self.pos.x or self.pos.x + self.sx  <= vector.x:
              return False
         if vector.y < self.pos.y or self.pos.z + self.sy <= vector.y:
@@ -185,18 +190,26 @@ class World(object):
     def get_block(self, pos):
         return self.get_chunk(pos).get_absolute_block(pos)
 
+    def has_chunk(self, pos):
+        for chunk in self.chunks:
+            if chunk.contains(pos):
+                return True
+        return False
+
     def get_chunk(self, pos):
         for chunk in self.chunks:
-            if chunk.point_in_chunk(pos):
+            if chunk.contains(pos):
                 return chunk
         raise KeyError("No chunk for region %s" % pos)
 
     def on_pre_chunk(self, x, z, mode):
         #FIXME: Save incoming chunks to disk and load them in and out of memory depending on where in map we are?
-        pass
+        #c = Chunk(x*16, 0, z*16)
+        #self.chunks.append(c)
 
     def on_map_chunk(self, x, y, z, sx, sy, sz, compressed_chunk_size, compressed_chunk):
-        c = Chunk(x, y, z, sx, sy, sz)
+        c = Chunk(Vector(x, y, z))
+        c.set_size(sx, sy, sz)
         c.load_chunk(compressed_chunk)
         self.chunks.append(c)
 

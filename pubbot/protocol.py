@@ -22,7 +22,7 @@ from twisted.python import log
 
 from pubbot.reader import MinecraftReader, NBTReader
 from pubbot.writer import MinecraftWriter
-
+from pubbot.vector import Vector
 
 class BaseMinecraftClientProtocol(Protocol):
 
@@ -456,7 +456,6 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_bool(on_ground)
 
     def send_player_digging(self, status, x, y, z, face):
-        log.msg("dig", status, x, y, z, face)
         assert status >= 0 and status <= 3
         assert face >= 0 and face <= 5
         self.writer.write_packet_id(0x0E)
@@ -467,7 +466,6 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_byte(face)
 
     def send_player_block_placement(self, block_id, x, y, z, direction):
-        log.msg("place block", block_id, x, y, z, direction)
         assert direction >= 0 and direction <= 5
         self.writer.write_packet_id(0x0F)
         self.writer.write_short(block_id)
@@ -507,8 +505,14 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
 
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
         should_start = False
+
         if self.state != "ready":
-            should_start = True
+            # Don't start simulating until at *least* the chunk we are in is loaded
+            try:
+                self.world.get_chunk(Vector(x, y, z))
+                should_start = True
+            except KeyError:
+                should_start = False
 
         BaseMinecraftClientProtocol.on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground)
 

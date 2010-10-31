@@ -110,15 +110,17 @@ class Dig(Action):
             }
 
     def do_start(self):
-        #block = self.bot.protocol.world.get_block(self.pos)
-        #if block.kind == 0:
-        #    log.msg("Mine air? pff")
-        #    return
+        # If we don't have chunk data for this task, hold of for now
+        if not self.has_chunk(self.pos):
+            return self
 
+        block = self.bot.protocol.world.get_block(self.pos)
+        if block.kind == 0:
+            # Trying to mine air, skip this task
+            return
 
         # holda diamond pick-axe. TODO: Work out of spade or axe is better
-        item_id = 0x115
-        self.bot.protocol.send_holding_change(0, item_id)
+        self.bot.protocol.send_holding_change(0, block.preferred_tool)
 
         # animate arm
         self.bot.protocol.send_arm_animation(0, True)
@@ -126,7 +128,8 @@ class Dig(Action):
         # actually mine
         self.mine(0)
         self.stage = "mining"
-        self.timer = 10
+        self.timer = block.ftl
+
         return self
 
     def do_mine(self):
