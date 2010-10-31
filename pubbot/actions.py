@@ -97,7 +97,7 @@ class Dig(Action):
 
     """ I mine blocks """
 
-    def __init__(self, bot, pos, face=0):
+    def __init__(self, bot, pos, face=-1):
         super(Dig, self).__init__(bot)
         self.pos = pos
         self.face = face
@@ -126,9 +126,12 @@ class Dig(Action):
         self.bot.protocol.send_arm_animation(0, True)
 
         # actually mine
-        self.mine(0)
         self.stage = "mining"
+        if self.face == -1:
+            self.face = block.get_face(self.bot.pos)[0]
         self.timer = block.ftl
+
+        self.mine(0)
 
         return self
 
