@@ -100,9 +100,9 @@ class Chunk(object):
 
     __slots__ = ("pos", "sx", "sy", "sz", "blocks")
 
-    def __init__(self, x, y, z):
+    def __init__(self, pos):
         # Record start of chunk.
-        self.pos = Vector(x, y, z)
+        self.pos = pos
 
         # Assume normal size
         self.sx = 16
@@ -206,6 +206,7 @@ class World(object):
         #FIXME: Save incoming chunks to disk and load them in and out of memory depending on where in map we are?
         #c = Chunk(x*16, 0, z*16)
         #self.chunks.append(c)
+        pass
 
     def on_map_chunk(self, x, y, z, sx, sy, sz, compressed_chunk_size, compressed_chunk):
         c = Chunk(Vector(x, y, z))
@@ -215,10 +216,16 @@ class World(object):
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
         pos = Vector(chunk_x * 16, 0, chunk_z * 16)
+        if not self.has_chunk(pos):
+            #FIXME: Queue these somewhere...
+            return
         c = self.get_chunk(pos)
         c.multi_change(array_size, coord_array, type_array, metadata_array)
 
     def on_block_change(self, x, y, z, type, metadata):
         pos = Vector(x, y, z)
+        if not self.has_chunk(pos):
+            #FIXME: Queue these somewhere...
+            return
         self.get_chunk(pos).change(pos, type, metadata)
 
