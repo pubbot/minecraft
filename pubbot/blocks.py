@@ -16,8 +16,19 @@
 
 blocks = {
     # Shovel
+    0x02: {
+        "name": "grass",
+        "preferred_tool": 0x115,
+        "times": {
+            0x00: 1.05,
+            0x10d: 0.7,
+            0x111: 0.49,
+            0x100: 0.44,
+            0x115: 0.39,
+            }
+        },
     0x03: {
-        "name": "sand",
+        "name": "dirt",
         "preferred_tool": 0x115,
         "times": {
             0x00: 1.05,

@@ -34,15 +34,21 @@ class Block(object):
 
     @property
     def preferred_tool(self):
-        return blocks[self.kind]["preferred_tool"]
+        try:
+            return blocks[self.kind]["preferred_tool"]
+        except KeyError:
+            return 0x104
 
     @property
     def ttl(self):
-        return blocks[self.kind]["times"][self.preferred_tool]
+        try:
+            return blocks[self.kind]["times"][self.preferred_tool]
+        except KeyError:
+            return 20.0
 
     @property
     def ftl(self):
-        return int(math.ceil(self.ttl * 10))
+        return int(math.ceil(self.ttl * 12))
 
     @property
     def name(self):
@@ -98,7 +104,7 @@ class Block(object):
 
 class Chunk(object):
 
-    __slots__ = ("pos", "sx", "sy", "sz", "blocks")
+    __slots__ = ("pos", "sx", "sy", "sz", "blocks", "compressed")
 
     def __init__(self, pos):
         # Record start of chunk.
@@ -116,6 +122,9 @@ class Chunk(object):
         self.sy = sy
         self.sz = sz
 
+    def set_compressed(self, compressed):
+        self.compressed = compressed
+
     def dump_chunk(self, payload):
         if not os.path.exists("/tmp/chunks"):
             os.makedirs("/tmp/chunks")
@@ -129,20 +138,27 @@ class Chunk(object):
         open(path, "wb").write(payload)
         open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (i, self.pos.x, self.pos.y, self.pos.z, self.sx, self.sy, self.sz)]) + "\n")
 
-    def load_chunk(self, compressed_chunk):
-        payload = zlib.decompress(compressed_chunk)
+    def load_chunk(self):
+        if not self.compressed:
+            return
+
+        payload = zlib.decompress(self.compressed)
 
         if False:
             self.dump_chunk(payload)
+
+        ox, oy, oz = self.pos.x, self.pos.y, self.pos.z
 
         self.blocks = {}
         for x in range(self.sx+1):
             for z in range(self.sz+1):
                 for y in range(self.sy+1):
-                    index = y + (z*self.sy) + (x*self.sy*self.sz)
+                    index = y + (z*(self.sy+1)) + (x*(self.sy+1)*(self.sz+1))
                     #print index, len(payload)
                     kind = ord(payload[index])
-                    self.blocks[(x, y, z)] = Block(Vector(x, y, z), kind, 0)
+                    self.blocks[(x, y, z)] = Block(Vector(ox + x, oy + y, oz + z), kind, 0)
+
+        self.compressed = None
 
     def multi_change(self, array_size, coords, kinds, metadatas):
         for i in range(array_size):
@@ -161,6 +177,8 @@ class Chunk(object):
         b.metadata = metadata
 
     def get_relative_block(self, vector):
+        if self.compressed:
+            self.load_chunk()
         v = vector.floor()
         return self.blocks[(v.x, v.y, v.z)]
 
@@ -211,7 +229,7 @@ class World(object):
     def on_map_chunk(self, x, y, z, sx, sy, sz, compressed_chunk_size, compressed_chunk):
         c = Chunk(Vector(x, y, z))
         c.set_size(sx, sy, sz)
-        c.load_chunk(compressed_chunk)
+        c.set_compressed(compressed_chunk)
         self.chunks.append(c)
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):

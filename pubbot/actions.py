@@ -111,13 +111,18 @@ class Dig(Action):
 
     def do_start(self):
         # If we don't have chunk data for this task, hold of for now
-        if not self.has_chunk(self.pos):
+        if not self.bot.protocol.world.has_chunk(self.pos):
+            log.msg("Not loaded yet")
             return self
 
         block = self.bot.protocol.world.get_block(self.pos)
-        if block.kind == 0:
+        if block.kind == 0 or block.kind == 9:
             # Trying to mine air, skip this task
+            log.msg("Trying to mine air, heg")
             return
+
+        log.msg(block.kind, block.pos.x, block.pos.y, block.pos.z)
+        log.msg(block.name)
 
         # holda diamond pick-axe. TODO: Work out of spade or axe is better
         self.bot.protocol.send_holding_change(0, block.preferred_tool)
@@ -153,7 +158,7 @@ class Dig(Action):
         self.bot.protocol.send_arm_animation(0, False)
 
         # stop holding a thing
-        self.bot.protocol.send_holding_change(0, 0)
+        self.bot.protocol.send_holding_change(0, 51)
 
         self.stage = "finish"
 

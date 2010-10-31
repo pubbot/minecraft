@@ -456,6 +456,7 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_bool(on_ground)
 
     def send_player_digging(self, status, x, y, z, face):
+        log.msg("dig", status, x, y, z, face)
         assert status >= 0 and status <= 3
         assert face >= 0 and face <= 5
         self.writer.write_packet_id(0x0E)
@@ -512,7 +513,7 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
                 self.world.get_chunk(Vector(x, y, z))
                 should_start = True
             except KeyError:
-                should_start = False
+                should_start = True
 
         BaseMinecraftClientProtocol.on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground)
 
