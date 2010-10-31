@@ -117,21 +117,24 @@ class Chunk(object):
 
         path = "/tmp/chunks/0"
         i = 0
-        while not os.path.exists(path):
-            path = os.path.join("/tmp/chunks", i)
+        while os.path.exists(path):
+            path = os.path.join("/tmp/chunks", str(i))
             i = i + 1
 
         open(path, "wb").write(payload)
-        open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (i, self.x, self.y, self.z, self.sx, self.sy, self.sz)]) + "\n")
+        open("/tmp/chunks/index", "a").write("\t".join([str(x) for x in (i, self.pos.x, self.pos.y, self.pos.z, self.sx, self.sy, self.sz)]) + "\n")
 
     def load_chunk(self, compressed_chunk):
         payload = zlib.decompress(compressed_chunk)
+
+        if False:
+            self.dump_chunk(payload)
 
         self.blocks = {}
         for x in range(self.sx+1):
             for z in range(self.sz+1):
                 for y in range(self.sy+1):
-                    index = y + (z*128) + (x*128*16)
+                    index = y + (z*self.sy) + (x*self.sy*self.sz)
                     #print index, len(payload)
                     kind = ord(payload[index])
                     self.blocks[(x, y, z)] = Block(Vector(x, y, z), kind, 0)
