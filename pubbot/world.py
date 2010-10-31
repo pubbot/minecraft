@@ -81,19 +81,19 @@ class Block(object):
         # Yet another thing about this code that will haunt me for years
         if dir.z > dir.y:
             if dir.y > dir.z:
-                return tuple(zf, yf, xf)
+                return (zf, yf, xf)
             else:
-                return tuple(zf, xf, yf)
+                return (zf, xf, yf)
         elif dir.y > dir.x:
             if dir.x > dir.z:
-                return tuple(yf, xf, zf)
+                return (yf, xf, zf)
             else:
-                return tuple(yf, zf, xf)
+                return (yf, zf, xf)
         else:
             if dir.z > dir.y:
-                return tuple(xf, zf, yf)
+                return (xf, zf, yf)
             else:
-                return tuple(xf, yf, zf)
+                return (xf, yf, zf)
 
 
 class Chunk(object):
