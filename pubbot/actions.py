@@ -71,24 +71,24 @@ class MoveTo(Action):
 
     """ I would move to a coordinate, but John has been concentrating on mining """
 
-    def __init__(self, bot, x, y, z):
+    def __init__(self, bot, pos):
         super(MoveTo, self).__init__(bot)
-        self.x = x
-        self.y = y
-        self.z = z
+        self.pos = pos
 
     def do(self):
         # If i'm in free fall i can't move towards an objective
-        if not self.bot.on_ground:
-            return self
+        #if not self.bot.on_ground:
+        #    return self
 
         # Need to move toward the target, but without tripping speed hack detection
+        delta = self.pos - self.bot.pos
 
-        # Trace down and find the ground - do if need to experience gravity
-
-        # Have we arrived?
-        if self.x == self.bot.x and self.y == self.bot.y and self.z == self.bot.z:
+        if delta.length() < 1:
+            self.bot.move(delta)
             return None
+
+        delta.normalize()
+        self.bot.move(delta)
 
         return self
 
@@ -122,7 +122,7 @@ class Dig(Action):
             return
 
         log.msg(block.kind, block.pos.x, block.pos.y, block.pos.z)
-        log.msg(block.name)
+        #log.msg(block.name)
 
         # holda diamond pick-axe. TODO: Work out of spade or axe is better
         self.bot.protocol.send_holding_change(0, block.preferred_tool)

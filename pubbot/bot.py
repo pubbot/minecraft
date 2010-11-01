@@ -48,7 +48,6 @@ class Bot(object):
         self.update_task.start(0.1)
 
         # Hack to bootstrap pubbot into doing something
-        self.queue_immediate_actions(activity.grief(self))
 
     def look_at_nearest(self):
         nearby = []
@@ -125,3 +124,16 @@ class Bot(object):
             self.actions.insert(0, actions)
 
 
+    def on_chat(self, name, message):
+        acts = None
+
+        if message == "heel!":
+            try:
+                acts = activity.heel(self, self.protocol.entities.names[name])
+            except KeyError:
+                self.protocol.send_chat_message("i don't know where you are")
+        elif message == "mine!":
+            acts = activity.grief(self)
+
+        if acts:
+            self.queue_immediate_actions(acts)

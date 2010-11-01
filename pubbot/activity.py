@@ -17,6 +17,27 @@
 from pubbot import actions
 from pubbot.vector import Vector
 
+def heel(bot, target):
+    acts = []
+
+    # Move straight up
+    pos1 = bot.pos.copy()
+    pos1.y = 129
+    acts.append(actions.MoveTo(bot, pos1))
+
+    # Move towards target
+    pos2 = target.pos.copy()
+    pos2.y = 129
+    acts.append(actions.MoveTo(bot, pos2))
+
+    # Move straight down
+    acts.append(actions.MoveTo(bot, target.pos))
+
+    # Be proud, little pubbot
+    acts.append(actions.Say(bot, "I'm here :D"))
+    return tuple(acts)
+
+
 def grief(bot):
     acts =[]
 

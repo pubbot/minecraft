@@ -555,3 +555,11 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
     def on_block_change(self, x, y, z, type, metadata):
         self.world.on_block_change(x, y, z, type, metadata)
 
+    def on_chat_message(self, message):
+        log.msg(message)
+        if not message.startswith("<"):
+            return
+        name, msg = message.split("> ", 1)
+        name = name[1:]
+
+        self.bot.on_chat(name, msg)
