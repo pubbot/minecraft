@@ -23,7 +23,7 @@ from twisted.internet import task
 from twisted.python import log
 
 from pubbot.vector import Vector, forward
-from pubbot import activity
+from pubbot import activity, actions
 
 from pubbot.router import Pubbot
 
@@ -40,6 +40,9 @@ class Bot(object):
 
     def __init__(self, protocol):
         self.protocol = protocol
+
+        # dangerous
+        self.free_will = True
 
         self.x = 0
         self.y = 0
@@ -68,6 +71,9 @@ class Bot(object):
         # Hack to bootstrap pubbot into doing something
 
     def look_at_nearest(self):
+        if not self.free_will:
+            return
+
         nearby = []
         for entity in self.protocol.entities.names.itervalues():
             length = (entity.pos-self.pos).length()
@@ -176,6 +182,36 @@ class Bot(object):
                 return
 
             acts = activity.flyto(self, pos)
+
+        elif message.startswith("orient"):
+            if len(message) > 6:
+                pitch, yaw = message.strip().split(" ")[1:]
+                self.pitch = float(pitch)
+                self.yaw = float(yaw)
+                self.free_will = False
+            else:
+                self.protocol.send_chat_message("Current orientation is %s, %s" % (self.pitch, self.yaw))
+
+        elif message.startswith("pos"):
+            self.free_will = False
+            if len(message) > 3:
+                x, y, z = message.strip().split(" ")[1:]
+                self.x = float(x)
+                self.y = float(y)
+                self.z = float(z)
+                self.free_will = False
+            else:
+                self.protocol.send_chat_message("Current pos is %s, %s, %s" % (self.pos.x, self.pos.y, self.pos.z))
+
+        elif message.startswith("mine"):
+            x, y, z, face = message.strip().split(" ")[1:]
+            a = actions.Dig(Vector(float(x), float(y), float(z)), int(face))
+            acts = (a, )
+
+        elif message.startswith("place"):
+            x, y, z, tid = message.strip().split(" ")[1:]
+            a = actions.Build(self, Vector(float(x), float(y), float(z)), int(tid))
+            acts = (a, )
 
         if acts:
             self.queue_immediate_actions(acts)

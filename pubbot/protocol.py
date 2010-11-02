@@ -461,18 +461,18 @@ class BaseMinecraftClientProtocol(Protocol):
         assert face >= 0 and face <= 5
         self.writer.write_packet_id(0x0E)
         self.writer.write_byte(status)
-        self.writer.write_int(floor(x))
-        self.writer.write_byte(floor(y))
-        self.writer.write_int(floor(z))
+        self.writer.write_int(int(floor(x)))
+        self.writer.write_byte(int(floor(y)))
+        self.writer.write_int(int(floor(z)))
         self.writer.write_byte(face)
 
     def send_player_block_placement(self, block_id, x, y, z, direction):
         assert direction >= 0 and direction <= 5
         self.writer.write_packet_id(0x0F)
         self.writer.write_short(block_id)
-        self.writer.write_int(floor(x))
-        self.writer.write_byte(floor(y))
-        self.writer.write_int(floor(z))
+        self.writer.write_int(int(floor(x)))
+        self.writer.write_byte(int(floor(y)))
+        self.writer.write_int(int(floor(z)))
         self.writer.write_byte(direction)
 
     def send_holding_change(self, unused, block_id):

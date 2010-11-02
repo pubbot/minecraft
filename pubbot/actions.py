@@ -16,6 +16,8 @@
 
 from twisted.python import log
 
+from pubbot.vector import Vector
+
 
 class Action(object):
 
@@ -101,13 +103,19 @@ class Dig(Action):
         super(Dig, self).__init__(bot)
         self.pos = pos
         self.face = face
-        self.stage = "start"
+        self.stage = "first_look"
         self.calls = {
+            "first_look": self.do_first_look,
             "start": self.do_start,
             "mining": self.do_mine,
             "destroy": self.do_destroy,
             "finish": self.do_finish,
             }
+
+    def do_first_look(self):
+        # This is to make sure we are looking right way before we send anything
+        self.stage = "start"
+        return self
 
     def do_start(self):
         # If we don't have chunk data for this task, hold of for now
