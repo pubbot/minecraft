@@ -23,6 +23,16 @@ from twisted.python import log
 from pubbot.vector import Vector, forward
 from pubbot import activity
 
+from pubbot.router import Pubbot
+
+
+class Source(object):
+    def __init__(self, protocol):
+        self.protocol = protocol
+    def msg(self, msg):
+        self.protocol.send_chat_message(msg)
+    notify = msg
+
 
 class Bot(object):
 
@@ -38,6 +48,8 @@ class Bot(object):
         self.on_ground = True
 
         self.actions = []
+
+        self.chat = Pubbot()
 
     @property
     def pos(self):
@@ -137,3 +149,10 @@ class Bot(object):
 
         if acts:
             self.queue_immediate_actions(acts)
+            return
+
+
+        self.chat.on_message(Source(self.protocol), name, message)
+
+    def on_player_join(self, name):
+        self.chat.on_join(Source(self.protocol), name, "")

@@ -418,7 +418,7 @@ class BaseMinecraftClientProtocol(Protocol):
 
     def send_chat_message(self, message):
         self.writer.write_packet_id(0x03)
-        self.writer.write_string(message)
+        self.writer.write_string(message.encode("UTF-8"))
 
     def send_player_inventory(self, type, count, payload):
         assert False, "Not figured out size/structure of payload yet"
@@ -557,8 +557,13 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
 
     def on_chat_message(self, message):
         log.msg(message)
+
         if not message.startswith("<"):
+            if message.endswith(" joined the game."):
+                name = message[2:message.find(" joined the game.")]
+                self.bot.on_player_join(name)
             return
+
         name, msg = message.split("> ", 1)
         name = name[1:]
 
