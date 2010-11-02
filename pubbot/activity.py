@@ -18,6 +18,10 @@ from pubbot import actions
 from pubbot.vector import Vector
 
 def heel(bot, target):
+    flyto(bot, target.pos)
+
+
+def flyto(bot, pos):
     acts = []
 
     # Move straight up
@@ -26,12 +30,12 @@ def heel(bot, target):
     acts.append(actions.MoveTo(bot, pos1))
 
     # Move towards target
-    pos2 = target.pos.copy()
+    pos2 = pos.copy()
     pos2.y = 129
     acts.append(actions.MoveTo(bot, pos2))
 
     # Move straight down
-    acts.append(actions.MoveTo(bot, target.pos))
+    acts.append(actions.MoveTo(bot, pos))
 
     # Be proud, little pubbot
     acts.append(actions.Say(bot, "I'm here :D"))

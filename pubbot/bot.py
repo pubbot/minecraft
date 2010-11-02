@@ -17,6 +17,8 @@
 # Right now we have a simple actions system - Say, Mine, Build, Move.
 # More complicated behaviours will be build by combining these
 
+import ConfigParser, os, re
+
 from twisted.internet import task
 from twisted.python import log
 
@@ -50,6 +52,10 @@ class Bot(object):
         self.actions = []
 
         self.chat = Pubbot()
+        self.places = ConfigParser.ConfigParser()
+
+        if os.path.exists("places.cfg"):
+            self.places.read("places.cfg")
 
     @property
     def pos(self):
@@ -135,6 +141,8 @@ class Bot(object):
         else:
             self.actions.insert(0, actions)
 
+    def place_makekey(self, place):
+        return re.sub('[\W_]+', '', place).lower()
 
     def on_chat(self, name, message):
         acts = None
@@ -146,6 +154,28 @@ class Bot(object):
                 self.protocol.send_chat_message("i don't know where you are")
         elif message == "mine!":
             acts = activity.grief(self)
+
+        elif message.startswith("this is "):
+            placename = self.place_makekey(message[8:])
+            if not self.places.has_section(placename):
+                 self.places.add_section(placename)
+            self.places.set(placename, "x", self.pos.x)
+            self.places.set(placename, "y", self.pos.y)
+            self.places.set(placename, "z", self.pos.z)
+            self.places.write(open("places.cfg", "w"))
+
+        elif message.startswith("go to"):
+            placename = self.place_makekey(message[5:])
+            try:
+                x = self.places.getfloat(placename, "x")
+                y = self.places.getfloat(placename, "y")
+                z = self.places.getfloat(placename, "z")
+                pos = Vector(x, y, z)
+            except KeyError:
+                self.protocol.send_chat_message("I don't known that place :(")
+                return
+
+            acts = activity.flyto(self, pos)
 
         if acts:
             self.queue_immediate_actions(acts)
