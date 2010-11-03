@@ -153,6 +153,9 @@ class Bot(object):
     def on_chat(self, name, message):
         acts = None
 
+        if name == "pubbot":
+            return
+
         if message == "heel!":
             try:
                 acts = activity.heel(self, self.protocol.entities.names[name])
@@ -178,7 +181,7 @@ class Bot(object):
                 z = float(self.places.get(placename, "z"))
                 pos = Vector(x, y, z)
             except ConfigParser.NoSectionError:
-                self.protocol.send_chat_message("I don't known that place :(")
+                self.protocol.send_chat_message("I don't know that place :(")
                 return
 
             acts = activity.flyto(self, pos)
