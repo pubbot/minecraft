@@ -173,11 +173,11 @@ class Bot(object):
         elif message.startswith("go to"):
             placename = self.place_makekey(message[5:])
             try:
-                x = self.places.getfloat(placename, "x")
-                y = self.places.getfloat(placename, "y")
-                z = self.places.getfloat(placename, "z")
+                x = float(self.places.get(placename, "x"))
+                y = float(self.places.get(placename, "y"))
+                z = float(self.places.get(placename, "z"))
                 pos = Vector(x, y, z)
-            except KeyError:
+            except ConfigParser.NoSectionError:
                 self.protocol.send_chat_message("I don't known that place :(")
                 return
 
