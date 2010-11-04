@@ -48,12 +48,12 @@ def grief(bot):
     for x in range(-3, 3):
         for y in range(-3, 3):
             for z in range(-3, 3):
-                for s in range(0, 5):
-                    mine = actions.Dig(bot, bot.pos + Vector(x,y,z), s)
-                    acts.append(mine)
+                #for s in range(0, 5):
+                mine = actions.Dig(bot, bot.pos.floor() + Vector(x,y,z), -1)
+                acts.append(mine)
 
     # nearest first
-    acts.sort(key=lambda d: (bot.pos - d.pos).length())
+    acts.sort(key=lambda d: (bot.eyepos - d.pos).length())
 
     #pos = bot.pos + Vector(1,1,1)
     #pos = Vector(-145.71875, 72.0, -4.71875)

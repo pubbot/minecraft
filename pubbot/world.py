@@ -27,6 +27,15 @@ class Block(object):
 
     __slots__ = ("pos", "kind", "metadata")
 
+    faces = (
+        Vector(0.5,0.0,0.5),   #0, -Y
+        Vector(0.5,1.0,0.5),   #1, +Y
+        Vector(0.5,0.5,0.0),   #2, -Z
+        Vector(0.5,0.5,1.0),   #3, +Z
+        Vector(0.0,0.5,0.5),   #4, -X
+        Vector(1.0,0.5,0.5),   #5, +X
+        )
+
     def __init__(self, pos, kind, metadata):
         self.pos = pos
         self.kind = kind
@@ -54,52 +63,15 @@ class Block(object):
     def name(self):
         return blocks[self.kind]["name"]
 
-    def get_face(self, observer):
+    def get_faces(self, observer):
         """
         Given the vector of an observer, work out which of my sides they can best see
 
         Returns a list of faces they can see, with the nearest first
-
-        0    -Y
-        1    +Y
-        2    -Z
-        3    +Z
-        4    -X
-        5    +X
         """
-        dir = self.pos - observer
-
-        # Discard the 3 faces we definitely can't see
-        xf = 4 if dir.x < 0 else 5
-        yf = 0 if dir.y < 0 else 1
-        zf = 2 if dir.z < 0 else 3
-
-        # Garys law: Largest magnitude of change in a vector component leads us to the nearest face
-        # Drop the sign first of all axis
-        if dir.x < 0:
-            dir.x *= -1
-        if dir.y < 0:
-            dir.y *= -1
-        if dir.z < 0:
-            dir.z *= -1
-
-        # Sort biggest first - as its such a small loop ive manually unrolled the loop
-        # Yet another thing about this code that will haunt me for years
-        if dir.z > dir.y:
-            if dir.y > dir.z:
-                return (zf, yf, xf)
-            else:
-                return (zf, xf, yf)
-        elif dir.y > dir.x:
-            if dir.x > dir.z:
-                return (yf, xf, zf)
-            else:
-                return (yf, zf, xf)
-        else:
-            if dir.z > dir.y:
-                return (xf, zf, yf)
-            else:
-                return (xf, yf, zf)
+        faces = [(face, self.pos + self.faces[face]) for face in range(6)]
+        faces.sort(key=lambda x: (observer-x[1]).length())
+        return faces[0:3]
 
 
 class Chunk(object):

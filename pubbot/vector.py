@@ -39,24 +39,10 @@ class Vector(object):
         return Vector(self.x * scale, self.y * scale, self.z * scale)
 
     def to_angles(self):
-        if self.x == 0 and self.z == 0:
-            yaw = 0
-            if self.y > 0:
-                pitch = 90
-            else:
-                pitch = 270
-        else:
-            if self.x:
-                yaw = atan2(self.x * -1.0, self.z) * RAD2DEGREE
-            elif self.z > 0:
-                yaw = 90
-            else:
-                yaw = 270
-
         forward = sqrt(self.x*self.x + self.z*self.z)
+        yaw = atan2(self.x * -1.0, self.z) * RAD2DEGREE
         pitch = atan2(self.y, forward) * RAD2DEGREE
-
-        return (yaw+180, pitch)
+        return (yaw, 360-pitch)
 
     def floor(self):
         return Vector(int(floor(self.x)), int(floor(self.y)), int(floor(self.z)))
