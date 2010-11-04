@@ -194,11 +194,21 @@ class Build(Action):
 
     def __init__(self, bot, pos, block_type):
         super(Build, self).__init__(bot)
-        self.pos = pos
+        self.pos = pos.floor()
         self.block_type = block_type
+        self.state = "1"
 
     def do(self):
-        self.bot.protocol.send_player_block_placement(self.block_type, self.pos.x, self.pos.y, self.pos.z, 0)
+        self.bot.look_at(self.pos.x, self.pos.y, self.pos.z)
+
+        if self.state == "1":
+            self.bot.protocol.send_holding_change(0, self.block_type)
+            self.bot.protocol.send_arm_animation(0, True)
+            self.state = "2"
+            return self
+        else:
+            self.bot.protocol.send_player_block_placement(self.block_type, self.pos.x, self.pos.y, self.pos.z, 1)
+            self.bot.protocol.send_arm_animation(0, False)
 
 
 class Functor(Action):

@@ -166,6 +166,9 @@ class Bot(object):
         elif message == "mine!":
             acts = activity.grief(self)
 
+        elif message == "fire!":
+            acts = activity.fire(self)
+
         elif message.startswith("this is "):
             placename = self.place_makekey(message[8:])
             if not self.places.has_section(placename):
