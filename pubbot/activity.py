@@ -41,20 +41,28 @@ def flyto(bot, pos):
     acts.append(actions.Say(bot, "I'm here :D"))
     return tuple(acts)
 
+def fire(bot):
+    acts = []
+    for x in range(-3, 3):
+        for z in range(-3, 3):
+             f = actions.Build(bot, bot.pos.floor() + Vector(x, -1, z), 0x33)
+             acts.append(f)
+    acts.sort(key=lambda d: (bot.eyepos - d.pos).length())
+    return tuple(acts)
 
 def grief(bot):
     acts =[]
-
     for x in range(-3, 3):
         for y in range(-3, 3):
             for z in range(-3, 3):
-                for s in range(0, 5):
-                    mine = actions.Dig(bot, bot.pos + Vector(x,y,z), s)
-                    acts.append(mine)
+                m = actions.Dig(bot, bot.pos.floor() + Vector(x,y,z), -1)
+                acts.append(m)
 
     # nearest first
-    acts.sort(key=lambda d: (bot.pos - d.pos).length())
+    acts.sort(key=lambda d: (bot.eyepos - d.pos).length())
+    return tuple(acts)
 
+def dunnot(bot):
     #pos = bot.pos + Vector(1,1,1)
     #pos = Vector(-145.71875, 72.0, -4.71875)
 

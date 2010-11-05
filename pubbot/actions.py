@@ -103,6 +103,7 @@ class Dig(Action):
         super(Dig, self).__init__(bot)
         self.pos = pos
         self.face = face
+        self.facepos = pos
         self.stage = "first_look"
         self.calls = {
             "first_look": self.do_first_look,
@@ -141,7 +142,7 @@ class Dig(Action):
         # actually mine
         self.stage = "mining"
         if self.face == -1:
-            self.face = block.get_face(self.bot.pos)[0]
+            self.face, self.facepos = block.get_faces(self.bot.pos)[0]
         self.timer = block.ftl
 
         self.mine(0)
@@ -183,7 +184,7 @@ class Dig(Action):
         self.bot.protocol.send_player(True)
 
     def do(self):
-        self.bot.look_at(self.pos.x, self.pos.y, self.pos.z)
+        self.bot.look_at(self.facepos.x, self.facepos.y, self.facepos.z)
         return self.calls[self.stage]()
 
 
@@ -193,11 +194,21 @@ class Build(Action):
 
     def __init__(self, bot, pos, block_type):
         super(Build, self).__init__(bot)
-        self.pos = pos
+        self.pos = pos.floor()
         self.block_type = block_type
+        self.state = "1"
 
     def do(self):
-        self.bot.protocol.send_player_block_placement(self.block_type, self.pos.x, self.pos.y, self.pos.z, 0)
+        self.bot.look_at(self.pos.x, self.pos.y, self.pos.z)
+
+        if self.state == "1":
+            self.bot.protocol.send_holding_change(0, self.block_type)
+            self.bot.protocol.send_arm_animation(0, True)
+            self.state = "2"
+            return self
+        else:
+            self.bot.protocol.send_player_block_placement(self.block_type, self.pos.x, self.pos.y, self.pos.z, 1)
+            self.bot.protocol.send_arm_animation(0, False)
 
 
 class Functor(Action):

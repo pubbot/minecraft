@@ -64,6 +64,10 @@ class Bot(object):
     def pos(self):
         return Vector(self.x, self.y, self.z)
 
+    @property
+    def eyepos(self):
+        return Vector(self.x, self.y+1.65, self.z)
+
     def start(self):
         self.update_task = task.LoopingCall(self.frame)
         self.update_task.start(0.1)
@@ -85,7 +89,7 @@ class Bot(object):
         nearby.sort()
         #log.msg(nearby[0][1].player_name, nearby[0][0])
         pos = nearby[0][1].pos
-        self.look_at(pos.x, pos.y, pos.z)
+        self.look_at(pos.x, pos.y+1.7, pos.z)
         #if nearby[0][0] > 5 or nearby[0][0] < -5:
         #    self.move((pos-self.pos).normalize())
 
@@ -107,11 +111,11 @@ class Bot(object):
         elif self.stance - self.y > 1.65:
             self.stance = self.y + 1.6
 
-        if self.pitch < 0:
-            self.pitch += 360
+        #if self.pitch < 0:
+        #    self.pitch += 360
 
-        # if self.yaw < 0:
-        #     self.yaw += 360
+        #if self.yaw < 0:
+        #    self.yaw += 360
 
         #log.msg(self.yaw, self.pitch)
 
@@ -122,7 +126,7 @@ class Bot(object):
         self.protocol.send_player_look(self.yaw, self.pitch, self.on_ground)
 
     def look_at(self, x, y, z):
-        aim = self.pos - Vector(x, y, z)
+        aim = Vector(x, y, z) - self.eyepos
         self.yaw, self.pitch = aim.to_angles()
 
     def move(self, pos):
@@ -161,8 +165,12 @@ class Bot(object):
                 acts = activity.heel(self, self.protocol.entities.names[name])
             except KeyError:
                 self.protocol.send_chat_message("i don't know where you are")
+
         elif message == "mine!":
             acts = activity.grief(self)
+
+        elif message == "fire!":
+            acts = activity.fire(self)
 
         elif message.startswith("this is "):
             placename = self.place_makekey(message[8:])
