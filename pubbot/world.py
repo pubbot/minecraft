@@ -23,6 +23,14 @@ from pubbot.chunk import Chunk
 from pubbot.vector import Vector
 
 
+NORTH = Vector(-1, 0, 0)
+EAST = Vector(0, 0, -1)
+SOUTH = Vector(1, 0, 0)
+WEST = Vector(1, 0, 0)
+UP = Vector(0, 1, 0)
+DOWN = Vector(0, -1, 0)
+
+
 class World(object):
 
     def __init__(self):
@@ -45,6 +53,35 @@ class World(object):
             if chunk.contains(pos):
                 return chunk
         raise KeyError("No chunk for region %s" % pos)
+
+    def available(self, pos):
+        transforms = [
+            NORTH, EAST, SOUTH, WEST, DOWN, UP,
+            ]
+
+        for transform in transforms:
+            yield self.allowed(pos+transform)
+
+    def allowed(self, pos, allow_fly=True):
+        block = self.get_block(pos)
+        if block.solid:
+            return False
+
+        # Check block above (for head clearance)
+        if above_pos.y < 127:
+            above_pos = pos.copy() + Vector(0, 1, 0)
+            above = self.get_block(above_pos)
+            if above.solid:
+                return False
+
+        # Stick to the ground
+        if allow_fly:
+            below_pos = pos.copy() - Vector(0, 1, 0)
+            below = self.get_block(below_pos)
+            if not below.solid and not below.liquid:
+                 return False
+
+        return True
 
     def on_pre_chunk(self, x, z, mode):
         #FIXME: Save incoming chunks to disk and load them in and out of memory depending on where in map we are?

@@ -42,6 +42,14 @@ class Block(object):
         self.metadata = metadata
 
     @property
+    def solid(self):
+        return self.kind not in [0x00, 0x08, 0x09, 0x0A, 0x0B, ]
+
+    @property
+    def liquid(self):
+        return self.kind in [0x08, 0x09, 0x0A, 0x0B, ]
+
+    @property
     def preferred_tool(self):
         try:
             return blocks[self.kind]["preferred_tool"]
@@ -56,7 +64,8 @@ class Block(object):
             return 20.0
 
     @property
-    def ftl(self):
+    def digs(self):
+        """ How many "Digging" messages does it take to destroy this block """
         return int(math.ceil(self.ttl * 12))
 
     @property

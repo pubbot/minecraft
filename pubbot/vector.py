@@ -31,6 +31,9 @@ class Vector(object):
     def length(self):
         return sqrt(self.x*self.x + self.y*self.y + self.z*self.z)
 
+    def manhattan_length(self):
+        return abs(self.x) + abs(self.y) + abs(self.z)
+
     def normalize(self):
         length = self.length()
         if not length:
