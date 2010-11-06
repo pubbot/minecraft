@@ -17,6 +17,9 @@
 
 import heapq
 
+MAX_PATH_SIZE = 64
+
+
 class Heap(object):
 
     __slots__ = ("sortfn", "heap", )
@@ -50,7 +53,7 @@ class Path(object):
         """
         I return a value to help sort paths by their efficiency
         """
-        heuristic = min((goal-point).manhattan_length() for goal in self.goals)
+        heuristic = min((goal-self.point).manhattan_length() for goal in self.goals)
         # scale heuristic by 1% for better efficiency
         # favors expansion near goal over expansion from start
         # via http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#S12
@@ -61,11 +64,11 @@ def path(world, start, goals):
     start = start.floor()
 
     # Make sure there is a goal in range
-    if not filter(goals, lambda x: x.manhattan_length() > MAX_PATH_SIZE):
+    if not filter(lambda x: x.manhattan_length() <= MAX_PATH_SIZE, goals):
         return None
 
     # Check the goal is actually valid...
-    if not filter(goals, lambda x: world.allowed(x)):
+    if not filter(lambda x: world.allowed(x), goals):
         return None
 
     visited = set()
@@ -75,7 +78,7 @@ def path(world, start, goals):
     heap.push(Path(start, goals, []))
 
     while not heap.empty():
-        path = heap.pop(heap)
+        path = heap.pop()
 
         if path.point in visited:
             continue

@@ -92,6 +92,11 @@ class Vector(object):
         self.z /= other
         return self
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "Vector(%s, %s, %s)" % (self.x, self.y, self.z)
 
 def dot_product(a, b):
     return a.x*b.x + a.y*b.y + a.z*b.z
