@@ -40,7 +40,7 @@ class Bot(object):
 
     def __init__(self, protocol):
         self.protocol = protocol
-        self.name = protocol.name
+        self.name = protocol.username
 
         # dangerous
         self.free_will = True
@@ -93,7 +93,7 @@ class Bot(object):
         self.look_at(pos.x, pos.y+1.7, pos.z)
         if nearby[0][0] > 5 or nearby[0][0] < -5:
             if not self.actions:
-                self.actions.append(actions.NavigateTo(nearby[0][1].pos))
+                self.actions.append(actions.NavigateTo(self, nearby[0][1].pos))
             #self.move((pos-self.pos).normalize())
 
 

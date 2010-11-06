@@ -17,7 +17,7 @@
 from twisted.python import log
 
 from pubbot.vector import Vector
-
+from pubbot import astar
 
 class Action(object):
 
@@ -104,12 +104,20 @@ class NavigateTo(Action):
         self.pos = pos
 
     def do(self):
-        if self.bot.pos.floor() == pos.floor():
+        if self.bot.pos.floor() == self.pos.floor():
             return
 
+        log.msg("%s to %s, %s units" % (self.bot.pos.floor(), self.pos.floor(), (self.bot.pos-self.pos).manhattan_length()))
+
         actions = []
-        world = self.bot.protcol.world
-        for move in astar.path(self.bot.pos, [pos]):
+        world = self.bot.protocol.world
+        moves = astar.path(world, self.bot.pos, [self.pos])
+
+        if not moves:
+            log.msg("Cant seem to do that, no data or invalid dest")
+            return
+
+        for move in moves:
             actions.append(MoveTo(self.bot, move))
         actions.append(self)
 

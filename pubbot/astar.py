@@ -17,6 +17,9 @@
 
 import heapq
 
+from twisted.python import log
+
+
 MAX_PATH_SIZE = 64
 
 
@@ -64,11 +67,14 @@ def path(world, start, goals):
     start = start.floor()
 
     # Make sure there is a goal in range
-    if not filter(lambda x: x.manhattan_length() <= MAX_PATH_SIZE, goals):
+    filtered = filter(lambda x: (x-start).manhattan_length() <= MAX_PATH_SIZE, goals)
+    if not filtered:
+        log.msg("Goal is too far away")
         return None
 
     # Check the goal is actually valid...
     if not filter(lambda x: world.allowed(x), goals):
+        log.msg("Goal isnt valid")
         return None
 
     visited = set()
