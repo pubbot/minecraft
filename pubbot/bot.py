@@ -90,8 +90,10 @@ class Bot(object):
         #log.msg(nearby[0][1].player_name, nearby[0][0])
         pos = nearby[0][1].pos
         self.look_at(pos.x, pos.y+1.7, pos.z)
-        #if nearby[0][0] > 5 or nearby[0][0] < -5:
-        #    self.move((pos-self.pos).normalize())
+        if nearby[0][0] > 5 or nearby[0][0] < -5:
+            if not self.actions:
+                self.actions.append(actions.NavigateTo(nearby[0][1].pos))
+            #self.move((pos-self.pos).normalize())
 
 
     def frame(self):

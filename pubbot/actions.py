@@ -95,6 +95,27 @@ class MoveTo(Action):
         return self
 
 
+class NavigateTo(Action):
+
+    """ I use a* to try to move to a coordinate """
+
+    def __init__(self, bot, pos):
+        super(NavigateTo, self).__init__(bot)
+        self.pos = pos
+
+    def do(self):
+        if self.bot.pos.floor() == pos.floor():
+            return
+
+        actions = []
+        world = self.bot.protcol.world
+        for move in astar.path(self.bot.pos, [pos]):
+            actions.append(MoveTo(self.bot, move))
+        actions.append(self)
+
+        return tuple(actions)
+
+
 class Dig(Action):
 
     """ I mine blocks """
