@@ -164,7 +164,7 @@ class Dig(Action):
         self.stage = "mining"
         if self.face == -1:
             self.face, self.facepos = block.get_faces(self.bot.pos)[0]
-        self.timer = block.ftl
+        self.timer = block.digs
 
         self.mine(0)
 
