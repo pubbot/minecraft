@@ -136,12 +136,16 @@ class Chunk(object):
         for i in range(array_size):
              # coord is a short comprised of 4 bits of X, 4 bits of Z and 8 bits of Y
              coord = coords[i]
+             x = (coord & 0xF000) >> 12
+             z = (coord & 0x0F00) >> 8
+             y = (coord & 0x00FF)
+
              kind = kinds[i]
              metadata = metadatas[i]
 
-             #b = self.get_relative_block(Vector(x, y, z))
-             #b.kind = kind
-             #b.metadata = metadata
+             b = self.get_relative_block(Vector(x, y, z))
+             b.kind = kind
+             b.metadata = metadata
 
     def change(self, pos, kind, metadata):
         b = self.get_absolute_block(pos)
