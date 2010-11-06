@@ -29,7 +29,7 @@ class Heap(object):
     def push(self, x):
         heapq.heappush(self.heap, (self.sortfn(x), x))
 
-    def pop(self, x):
+    def pop(self):
         sortval, val = heapq.heappop(self.heap)
         return val
 
@@ -54,7 +54,7 @@ class Path(object):
         # scale heuristic by 1% for better efficiency
         # favors expansion near goal over expansion from start
         # via http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#S12
-        return heuristic * 101 + len(self.path * 100
+        return heuristic * 101 + len(self.path) * 100
 
 
 def path(world, start, goals):
@@ -85,7 +85,7 @@ def path(world, start, goals):
 
         if path.point in goals:
             final_path = path.path + [path.point]
-            final_path = [1:]
+            final_path = final_path[1:]
             return final_path
 
         for next_point in world.available(path.point):
