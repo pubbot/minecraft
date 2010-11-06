@@ -40,6 +40,7 @@ class Bot(object):
 
     def __init__(self, protocol):
         self.protocol = protocol
+        self.name = protocol.name
 
         # dangerous
         self.free_will = True
@@ -159,7 +160,7 @@ class Bot(object):
     def on_chat(self, name, message):
         acts = None
 
-        if name == "pubbot":
+        if name == self.name:
             return
 
         if message == "heel!":
@@ -234,4 +235,7 @@ class Bot(object):
         self.chat.on_message(Source(self.protocol), name, message)
 
     def on_player_join(self, name):
+        if self.name == name:
+            return
         self.chat.on_join(Source(self.protocol), name, "")
+
