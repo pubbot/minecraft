@@ -53,7 +53,7 @@ class NamedEntity(BaseEntity):
 
     def move(self, x, y, z):
         super(NamedEntity, self).move(x, y, z)
-        log.msg("%s is moving" % self.player_name)
+        #log.msg("%s is moving" % self.player_name)
 
 class Entities(object):
 

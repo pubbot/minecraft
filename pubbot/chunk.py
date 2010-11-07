@@ -62,7 +62,7 @@ class Chunk(object):
         if not self.compressed:
             return
 
-        log.msg("Attempting to load", *self.compressed)
+        log.msg("Attempting to load", *self.compressed[:-1])
 
         stx, sty, stz, sx, sy, sz, compressed = self.compressed
 

@@ -105,8 +105,6 @@ class World(object):
         # x,y,z is the start position of the region, in world block coordinates.
         # To find which chunk is affected, in the same coordinates given by packet 0x32, we shift
         # Whats left is the offset within a chunk
-        log.msg("on_map_chunk")
-
         cx, stx = x >> 4, x & 15
         cy, sty = y >> 7, y & 127
         cz, stz = z >> 4, z & 15
