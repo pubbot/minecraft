@@ -48,6 +48,7 @@ class Path(object):
     __slots__ = ("point", "goals", "path")
 
     def __init__(self, point, goals, path):
+        log.msg(point, goals, path)
         self.point = point
         self.goals = goals
         self.path = path
@@ -65,10 +66,10 @@ class Path(object):
 
 def path(world, start, goals):
     start = start.floor()
+    goals = [x.floor() for x in goals]
 
     # Make sure there is a goal in range
-    filtered = filter(lambda x: (x-start).manhattan_length() <= MAX_PATH_SIZE, goals)
-    if not filtered:
+    if not filter(lambda x: (x-start).manhattan_length() <= MAX_PATH_SIZE, goals):
         log.msg("Goal is too far away")
         return None
 
@@ -100,5 +101,6 @@ def path(world, start, goals):
         for next_point in world.available(path.point):
             if next_point in visited:
                 continue
+            log.msg(next_point)
             heap.push(Path(next_point, goals, path.path + [path.point]))
 

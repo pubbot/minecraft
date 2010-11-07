@@ -60,7 +60,8 @@ class World(object):
             ]
 
         for transform in transforms:
-            yield self.allowed(pos+transform)
+            if self.allowed(pos+transform):
+                yield pos+transform
 
     def allowed(self, pos, allow_fly=True):
         block = self.get_block(pos)
@@ -68,8 +69,8 @@ class World(object):
             return False
 
         # Check block above (for head clearance)
+        above_pos = pos.copy() + Vector(0, 1, 0)
         if above_pos.y < 127:
-            above_pos = pos.copy() + Vector(0, 1, 0)
             above = self.get_block(above_pos)
             if above.solid:
                 return False

@@ -111,7 +111,11 @@ class NavigateTo(Action):
 
         actions = []
         world = self.bot.protocol.world
-        moves = astar.path(world, self.bot.pos, [self.pos])
+
+        try:
+            moves = astar.path(world, self.bot.pos, [self.pos])
+        except KeyError:
+            moves = None
 
         if not moves:
             log.msg("Cant seem to do that, no data or invalid dest")
