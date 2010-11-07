@@ -98,6 +98,10 @@ class Vector(object):
     def __str__(self):
         return "Vector(%s, %s, %s)" % (self.x, self.y, self.z)
 
+    def __hash__(self):
+        return id(",".join(str(x) for x in (self.x, self.y, self.z)))
+
+
 def dot_product(a, b):
     return a.x*b.x + a.y*b.y + a.z*b.z
 
