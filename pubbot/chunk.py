@@ -17,6 +17,7 @@
 import os, zlib, math
 
 from twisted.internet import threads, defer
+from twisted.python import log
 
 from pubbot.block import Block
 from pubbot.vector import Vector

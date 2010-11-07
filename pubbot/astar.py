@@ -48,7 +48,7 @@ class Path(object):
     __slots__ = ("point", "goals", "path")
 
     def __init__(self, point, goals, path):
-        log.msg(point, goals, path)
+        #log.msg(point, goals, path)
         self.point = point
         self.goals = goals
         self.path = path
@@ -88,12 +88,12 @@ def path(world, start, goals):
         path = heap.pop()
 
         if path.point in visited:
-            log.msg("rejecting ", path.point)
+            #log.msg("rejecting ", path.point)
             continue
         visited.add(path.point)
 
         examined += 1
-        log.msg(examined, len(heap.heap))
+        #log.msg(examined, len(heap.heap))
 
         if path.point in goals:
             final_path = path.path + [path.point]
@@ -104,7 +104,8 @@ def path(world, start, goals):
         for next_point in world.available(path.point):
             if next_point in visited:
                 continue
-            log.msg(next_point)
+            #log.msg(next_point)
             heap.push(Path(next_point, goals, path.path + [path.point]))
 
-    log.msg("Ran out of heap")
+    #log.msg("Ran out of heap")
+

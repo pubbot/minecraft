@@ -51,7 +51,6 @@ class World(object):
     def get_chunk(self, pos):
         pos = pos.floor()
         key = (pos.x // 16, 0, pos.z // 16)
-        log.msg("GET CHUNK", pos.x, pos.y, pos.z, pos.x //16, 0, pos.z // 16)
         try:
             return self.chunks[key]
         except KeyError:
@@ -95,11 +94,12 @@ class World(object):
         return True
 
     def on_pre_chunk(self, x, z, mode):
-        if mode and not (x, 0, z) in self.chunks:
-            c = Chunk(x, 0, z)
-            self.chunks[(x, 0, z)] = c
-            log.msg("PRECHUNK", x, 0, z)
+        #if mode and not (x, 0, z) in self.chunks:
+        #    c = Chunk(x, 0, z)
+        #    self.chunks[(x, 0, z)] = c
+        #    log.msg("PRECHUNK", x, 0, z)
         #FIXME: Chunk unloading and reloading!!
+        pass
 
     def on_map_chunk(self, x, y, z, sx, sy, sz, compressed_chunk_size, compressed_chunk):
         # x,y,z is the start position of the region, in world block coordinates.
@@ -114,8 +114,6 @@ class World(object):
         c = Chunk(cx, cy, cz)
         c.set_compressed(stx, sty, stz, sx, sy, sz, compressed_chunk)
         self.chunks[(cx, cy, cz)] = c
-
-        log.msg("CHUNK", cx, cy, cz)
 
     def on_multi_block_change(self, chunk_x, chunk_z, array_size, coord_array, type_array, metadata_array):
         key = (chunk_x, 0, chunk_z)
