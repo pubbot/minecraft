@@ -115,6 +115,7 @@ class NavigateTo(Action):
         try:
             moves = astar.path(world, self.bot.pos, [self.pos])
         except KeyError:
+            log.err()
             moves = None
 
         if not moves:

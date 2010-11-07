@@ -24,26 +24,25 @@ from pubbot.vector import Vector
 
 class Chunk(object):
 
-    __slots__ = ("pos", "sx", "sy", "sz", "blocks", "compressed")
+    __slots__ = ("x", "y", "z", "blocks", "compressed")
 
-    def __init__(self, pos):
+    def __init__(self, x, y, z):
         # Record start of chunk.
-        self.pos = pos
+        self.x = x
+        self.y = y
+        self.z = z
 
         # Assume normal size
-        self.sx = 16
-        self.sy = 128
-        self.sz = 16
+        #self.sx = 16
+        #self.sy = 128
+        #self.sz = 16
+
+        self.compressed = None
 
         self.blocks = {}
 
-    def set_size(self, sx, sy, sz):
-        self.sx = sx
-        self.sy = sy
-        self.sz = sz
-
-    def set_compressed(self, compressed):
-        self.compressed = compressed
+    def set_compressed(self, *payload):
+        self.compressed = payload
 
     def dump_chunk(self, payload):
         if not os.path.exists("/tmp/chunks"):
@@ -62,18 +61,22 @@ class Chunk(object):
         if not self.compressed:
             return
 
-        payload = zlib.decompress(self.compressed)
+        log.msg("Attempting to load", *self.compressed)
+
+        stx, sty, stz, sx, sy, sz, compressed = self.compressed
+
+        payload = zlib.decompress(compressed)
 
         if False:
             self.dump_chunk(payload)
 
-        ox, oy, oz = self.pos.x, self.pos.y, self.pos.z
+        ox, oy, oz = self.x*16, self.y, self.z*16
 
         self.blocks = {}
-        for x in range(self.sx+1):
-            for z in range(self.sz+1):
-                for y in range(self.sy+1):
-                    index = y + (z*(self.sy+1)) + (x*(self.sy+1)*(self.sz+1))
+        for x in range(stx, sx+1):
+            for z in range(stz, sz+1):
+                for y in range(sty, sy+1):
+                    index = y + (z*(sy+1)) + (x*(sy+1)*(sz+1))
                     #print index, len(payload)
                     kind = ord(payload[index])
                     self.blocks[(x, y, z)] = Block(Vector(ox + x, oy + y, oz + z), kind, 0)
@@ -107,15 +110,15 @@ class Chunk(object):
         return self.blocks[(v.x, v.y, v.z)]
 
     def get_absolute_block(self, vector):
-        rel = vector - self.pos
+        rel = vector - Vector(self.x*16, self.y, self.z*16)
         return self.get_relative_block(rel)
 
     def contains(self, vector):
-        if vector.x < self.pos.x or self.pos.x + self.sx  <= vector.x:
+        if vector.x < self.pos.x or self.pos.x + 16  <= vector.x:
              return False
-        if vector.y < self.pos.y or self.pos.z + self.sy <= vector.y:
+        if vector.y < self.pos.y or self.pos.z + 128 <= vector.y:
             return False
-        if vector.z < self.pos.z or self.pos.z + self.sz <= vector.z:
+        if vector.z < self.pos.z or self.pos.z + 16 <= vector.z:
             return False
 
         return True
