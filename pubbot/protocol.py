@@ -437,9 +437,9 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_short(count)
         self.writer.write_xxxx(payload)
 
-    def send_0x07(self, ignore1, ignore2):
+    def send_0x07(self, eid, ignore2):
         self.writer.write_packet_id(0x07)
-        self.writer.write_int(ignore1)
+        self.writer.write_int(eid)
         self.writer.write_int(ignore2)
 
     def send_player(self, on_ground):
