@@ -226,6 +226,23 @@ class Dig(Action):
         return self.calls[self.stage]()
 
 
+class MineGrid(Action):
+
+    def __init__(self, bot, corner1, corner2):
+        self.bot, self.corner1, self.corner2 = bot, corner1, corner2
+
+    def do(self):
+        grid = []
+        for x in range(self.corner1.x, self.corner2.x+1):
+            for y in range(self.corner1.y, self.corner2.y+1):
+                for z in range(self.corner1.z, self.corner2.z+1):
+                    pos = Vector(x, y, z)
+                    grid.append((pos-self.bot.pos).length(), pos)
+        grid.sort()
+
+        return tuple(Dig(self.bot, x[1]) for x in grid)
+
+
 class Build(Action):
 
     """ I build blocks """
