@@ -114,6 +114,10 @@ class BaseMinecraftClientProtocol(Protocol):
                 z = yield self.reader.read_int()
                 self.on_spawn_position(x, y, z)
 
+            elif packet_id == 0x07:
+                ignore1 = yield self.reader.read_int()
+                ignore2 = yield self.reader.read_int()
+
             elif packet_id == 0x10:
                 eid = yield self.reader.read_int()
                 item_id = yield self.reader.read_short()
@@ -186,6 +190,12 @@ class BaseMinecraftClientProtocol(Protocol):
                 pitch = yield self.reader.read_byte()
                 self.on_mob_spawn(eid, type, x, y, z, yaw, pitch)
 
+            elif packet_id == 0x1C:
+                eid = yield self.reader.read_int()
+                x = yield self.reader.read_short()
+                y = yield self.reader.read_short()
+                z = yield self.reader.read_short()
+
             elif packet_id == 0x1D:
                 eid = yield self.reader.read_int()
                 self.on_destroy_entity(eid)
@@ -224,6 +234,10 @@ class BaseMinecraftClientProtocol(Protocol):
                 yaw = yield self.reader.read_byte()
                 pitch = yield self.reader.read_byte()
                 self.on_entity_teleport(eid, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x27:
+                eid = yield self.reader.read_int()
+                ignore2 = yield self.reader.read_int()
 
             elif packet_id == 0x32:
                 x = yield self.reader.read_int()
@@ -307,11 +321,11 @@ class BaseMinecraftClientProtocol(Protocol):
             pass
         else:
             # Name verification call...
-            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash.encode("UTF-8")))
+            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash.encode("UTF-8")), timeout=60)
             if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
-        self.send_login_request(3, self.username, self.server_password, 0, 0)
+        self.send_login_request(4, self.username, self.server_password, 0, 0)
 
     def on_chat_message(self, message):
         """
