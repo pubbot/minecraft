@@ -64,7 +64,7 @@ class Path(object):
         return heuristic * 101 + len(self.path) * 100
 
 
-def path(world, start, goals):
+def path(world, start, goals, mode="move"):
     start = start.floor()
     goals = [x.floor() for x in goals]
 

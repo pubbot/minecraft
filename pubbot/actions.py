@@ -99,9 +99,10 @@ class NavigateTo(Action):
 
     """ I use a* to try to move to a coordinate """
 
-    def __init__(self, bot, pos):
+    def __init__(self, bot, pos, mode="move"):
         super(NavigateTo, self).__init__(bot)
         self.pos = pos
+        self.mode = mode
 
     def do(self):
         if self.bot.pos.floor() == self.pos.floor():
@@ -113,7 +114,7 @@ class NavigateTo(Action):
         world = self.bot.protocol.world
 
         try:
-            moves = astar.path(world, self.bot.pos, [self.pos])
+            moves = astar.path(world, self.bot.pos, [self.pos], mode=self.mode)
         except KeyError:
             log.err()
             moves = None
@@ -148,6 +149,9 @@ class Dig(Action):
             }
 
     def do_first_look(self):
+        if (self.pos - self.bot.pos).length() > 4:
+            return (NavigateTo(self.bot, self.pos, mode="dig"), self)
+
         # This is to make sure we are looking right way before we send anything
         self.stage = "start"
         return self

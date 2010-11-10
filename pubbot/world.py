@@ -58,7 +58,9 @@ class World(object):
 
     def available(self, pos):
         transforms = [
-            NORTH, EAST, SOUTH, WEST, DOWN, UP,
+            NORTH, EAST, SOUTH, WEST, #DOWN, UP,
+            NORTH+DOWN, EAST+DOWN, SOUTH+DOWN, WEST+DOWN,
+            NORTH+UP, EAST+UP, SOUTH+UP, WEST+UP,
             ]
 
         for transform in transforms:
