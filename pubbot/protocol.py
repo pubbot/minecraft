@@ -141,7 +141,7 @@ class BaseMinecraftClientProtocol(Protocol):
 
             elif packet_id == 0x12:
                 eid = yield self.reader.read_int()
-                animate = yield self.reader.read_bool()
+                animate = yield self.reader.read_byte()
                 self.on_arm_animation(eid, animate)
 
             elif packet_id == 0x14:
@@ -494,10 +494,10 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_int(unused)
         self.writer.write_short(block_id)
 
-    def send_arm_animation(self, unused, waving):
+    def send_arm_animation(self, unused, animation):
         self.writer.write_packet_id(0x12)
         self.writer.write_int(unused)
-        self.writer.write_bool(waving)
+        self.writer.write_byte(animation)
 
     def send_disconnect(self, reason):
         self.writer.write_packet_id(0xFF)

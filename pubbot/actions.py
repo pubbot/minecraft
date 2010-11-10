@@ -175,7 +175,7 @@ class Dig(Action):
         self.bot.protocol.send_holding_change(0, block.preferred_tool)
 
         # animate arm
-        self.bot.protocol.send_arm_animation(0, True)
+        self.bot.protocol.send_arm_animation(0, 1)
 
         # actually mine
         self.stage = "mining"
@@ -191,7 +191,7 @@ class Dig(Action):
         self.mine(1)
         self.timer -= 1
 
-        self.bot.protocol.send_arm_animation(0, True)
+        self.bot.protocol.send_arm_animation(0, 1)
 
         if self.timer < 1:
             self.stage = "destroy"
@@ -202,7 +202,7 @@ class Dig(Action):
         self.mine(3)
 
         # un-animate arm
-        self.bot.protocol.send_arm_animation(0, False)
+        self.bot.protocol.send_arm_animation(0, 0)
 
         # stop holding a thing
         self.bot.protocol.send_holding_change(0, 51)
@@ -241,12 +241,12 @@ class Build(Action):
 
         if self.state == "1":
             self.bot.protocol.send_holding_change(0, self.block_type)
-            self.bot.protocol.send_arm_animation(0, True)
+            self.bot.protocol.send_arm_animation(0, 1)
             self.state = "2"
             return self
         else:
             self.bot.protocol.send_player_block_placement(self.block_type, self.pos.x, self.pos.y, self.pos.z, 1)
-            self.bot.protocol.send_arm_animation(0, False)
+            self.bot.protocol.send_arm_animation(0, 0)
 
 
 class Functor(Action):
