@@ -114,10 +114,6 @@ class BaseMinecraftClientProtocol(Protocol):
                 z = yield self.reader.read_int()
                 self.on_spawn_position(x, y, z)
 
-            elif packet_id == 0x07:
-                ignore1 = yield self.reader.read_int()
-                ignore2 = yield self.reader.read_int()
-
             elif packet_id == 0x10:
                 eid = yield self.reader.read_int()
                 item_id = yield self.reader.read_short()
@@ -440,6 +436,11 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_int(type)
         self.writer.write_short(count)
         self.writer.write_xxxx(payload)
+
+    def send_0x07(self, ignore1, ignore2):
+        self.writer.write_packet_id(0x07)
+        self.writer.write_int(ignore1)
+        self.writer.write_int(ignore2)
 
     def send_player(self, on_ground):
         self.writer.write_packet_id(0x0A)
