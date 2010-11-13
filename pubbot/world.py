@@ -57,17 +57,17 @@ class World(object):
             raise KeyError("No chunk for region %s" % pos)
 
     def available(self, pos):
-        transforms = [
-            NORTH, EAST, SOUTH, WEST, #DOWN, UP,
-            NORTH+DOWN, EAST+DOWN, SOUTH+DOWN, WEST+DOWN,
-            NORTH+UP, EAST+UP, SOUTH+UP, WEST+UP,
-            ]
+        transforms = (
+            (NORTH,), (EAST,), (SOUTH,), (WEST,), #(DOWN,), (UP,),
+            (NORTH,DOWN), (EAST,DOWN), (SOUTH,DOWN), (WEST,DOWN),
+            (UP, NORTH), (UP, EAST), (UP, SOUTH), (UP, WEST),
+            )
 
         for transform in transforms:
-            if self.allowed(pos.floor()+transform):
-                res = pos.floor()+transform
-                log.msg(res)
-                yield res
+            effect = sum(transform)
+            if self.allowed(pos.floor()+effect):
+                #FIXME: Do i have to check every step in path?
+                yield tuple(pos.floor()+t for t in transform)
 
     def allowed(self, pos, allow_fly=True):
         pos = pos.floor()
