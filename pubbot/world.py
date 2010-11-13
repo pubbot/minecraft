@@ -64,7 +64,7 @@ class World(object):
             )
 
         for transform in transforms:
-            effect = sum(transform)
+            effect = reduce(lambda x, y: x+y, transform)
             if self.allowed(pos.floor()+effect):
                 #FIXME: Do i have to check every step in path?
                 yield tuple(pos.floor()+t for t in transform)

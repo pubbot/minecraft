@@ -105,7 +105,7 @@ def path(world, start, goals, mode="move"):
             if filter(lambda x: x in visited, next_points):
                 continue
             #log.msg(next_point)
-            heap.push(Path(next_points[:-1], goals, path.path + [path.point] + next_points[:-1]))
+            heap.push(Path(next_points[-1], goals, path.path + [path.point] + list(next_points[:-1])))
 
     #log.msg("Ran out of heap")
 
