@@ -31,7 +31,6 @@ WEST = Vector(0, 0, 1)
 UP = Vector(0, 1, 0)
 DOWN = Vector(0, -1, 0)
 
-
 class World(object):
 
     def __init__(self):
@@ -55,6 +54,19 @@ class World(object):
             return self.chunks[key]
         except KeyError:
             raise KeyError("No chunk for region %s" % pos)
+
+    def trace(self, start, direction, max_distance=64):
+        """
+        This is a cheapISH and FLAWED traceline implementation for where accuracy isnt that important.
+        """
+        prev = start.copy()
+        while not max_distance > 0:
+            pos = prev + direction
+            if self.get_block(pos).solid:
+                return prev
+            prev = pos
+            max_distance -= 1
+        return pos
 
     def available(self, pos):
         transforms = (
