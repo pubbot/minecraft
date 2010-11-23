@@ -137,7 +137,7 @@ class BaseMinecraftClientProtocol(Protocol):
 
             elif packet_id == 0x12:
                 eid = yield self.reader.read_int()
-                animate = yield self.reader.read_bool()
+                animate = yield self.reader.read_byte()
                 self.on_arm_animation(eid, animate)
 
             elif packet_id == 0x14:
@@ -186,6 +186,12 @@ class BaseMinecraftClientProtocol(Protocol):
                 pitch = yield self.reader.read_byte()
                 self.on_mob_spawn(eid, type, x, y, z, yaw, pitch)
 
+            elif packet_id == 0x1C:
+                eid = yield self.reader.read_int()
+                x = yield self.reader.read_short()
+                y = yield self.reader.read_short()
+                z = yield self.reader.read_short()
+
             elif packet_id == 0x1D:
                 eid = yield self.reader.read_int()
                 self.on_destroy_entity(eid)
@@ -224,6 +230,10 @@ class BaseMinecraftClientProtocol(Protocol):
                 yaw = yield self.reader.read_byte()
                 pitch = yield self.reader.read_byte()
                 self.on_entity_teleport(eid, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x27:
+                eid = yield self.reader.read_int()
+                ignore2 = yield self.reader.read_int()
 
             elif packet_id == 0x32:
                 x = yield self.reader.read_int()
@@ -307,11 +317,11 @@ class BaseMinecraftClientProtocol(Protocol):
             pass
         else:
             # Name verification call...
-            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash.encode("UTF-8")))
+            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash.encode("UTF-8")), timeout=60)
             if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
-        self.send_login_request(3, self.username, self.server_password, 0, 0)
+        self.send_login_request(4, self.username, self.server_password, 0, 0)
 
     def on_chat_message(self, message):
         """
@@ -427,6 +437,11 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_short(count)
         self.writer.write_xxxx(payload)
 
+    def send_0x07(self, eid, ignore2):
+        self.writer.write_packet_id(0x07)
+        self.writer.write_int(eid)
+        self.writer.write_int(ignore2)
+
     def send_player(self, on_ground):
         self.writer.write_packet_id(0x0A)
         self.writer.write_bool(on_ground)
@@ -480,10 +495,10 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_int(unused)
         self.writer.write_short(block_id)
 
-    def send_arm_animation(self, unused, waving):
+    def send_arm_animation(self, unused, animation):
         self.writer.write_packet_id(0x12)
         self.writer.write_int(unused)
-        self.writer.write_bool(waving)
+        self.writer.write_byte(animation)
 
     def send_disconnect(self, reason):
         self.writer.write_packet_id(0xFF)

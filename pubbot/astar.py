@@ -101,11 +101,11 @@ def path(world, start, goals, mode="move"):
             log.msg("FINAL PATH: ",  final_path)
             return final_path
 
-        for next_point in world.available(path.point):
-            if next_point in visited:
+        for next_points in world.available(path.point):
+            if filter(lambda x: x in visited, next_points):
                 continue
             #log.msg(next_point)
-            heap.push(Path(next_point, goals, path.path + [path.point]))
+            heap.push(Path(next_points[-1], goals, path.path + [path.point] + list(next_points[:-1])))
 
     #log.msg("Ran out of heap")
 
