@@ -9,7 +9,7 @@ class MockWorld(object):
         self.allowed_pos = allowed_pos
 
     def available(self, pos):
-        return list(x for x in self.allowed_pos if (pos-x).manhattan_length() <= 1)
+        return list((x,) for x in self.allowed_pos if (pos-x).manhattan_length() <= 1)
 
     def allowed(self, pos):
         return pos in self.allowed_pos
@@ -67,7 +67,7 @@ class TestAStar(unittest.TestCase):
         self.failUnlessEqual(route[1], Vector(0, 1, 1))
         self.failUnlessEqual(route[2], Vector(0, 1, 2))
         self.failUnlessEqual(route[3], Vector(0, 1, 3))
-        self.failUnlessEqual(route[4], Vector(0, 1, 4))
+        self.failUnlessEqual(route[4], Vector(0, 0, 3))
         self.failUnlessEqual(route[5], Vector(0, 0, 4))
         self.failUnlessEqual(route[6], Vector(0, 0, 5))
 
