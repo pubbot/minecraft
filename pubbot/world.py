@@ -22,6 +22,7 @@ from twisted.python import log
 
 from pubbot.chunk import Chunk
 from pubbot.vector import Vector
+from pubbot.traversal import walk
 
 
 NORTH = Vector(-1, 0, 0)
@@ -59,14 +60,18 @@ class World(object):
         """
         This is a cheapISH and FLAWED traceline implementation for where accuracy isnt that important.
         """
+        count = max_distance
         prev = start.copy()
-        while not max_distance > 0:
-            pos = prev + direction
-            if self.get_block(pos).solid:
+        for vec in walk(start, direction):
+            if self.get_block(vec).solid:
                 return prev
-            prev = pos
-            max_distance -= 1
-        return pos
+            prev = vec
+
+            count -= 1
+            if count <= 0:
+                break
+
+        return prev            
 
     def available(self, pos):
         transforms = (
