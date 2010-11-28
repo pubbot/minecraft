@@ -41,9 +41,20 @@ class Vector(object):
 
     def to_angles(self):
         forward = sqrt(self.x*self.x + self.z*self.z)
-        yaw = atan2(self.x * -1.0, self.z)
-        pitch = atan2(self.y, forward)
-        return (degrees(yaw), 360-degrees(pitch))
+        yaw = degrees(atan2(self.x * -1.0, self.z))
+        pitch = 360 - degrees(atan2(self.y, forward))
+
+        while yaw > 360:
+            yaw -= 360
+        while yaw < 0:
+            yaw += 360
+
+        while pitch > 360:
+            pitch -= 360
+        while pitch < 0:
+            pitch += 360
+
+        return (yaw, pitch)
 
     def floor(self):
         return Vector(int(floor(self.x)), int(floor(self.y)), int(floor(self.z)))
@@ -110,5 +121,10 @@ def cross_product(a, b):
 def forward(yaw, pitch):
     yaw = radians(yaw)
     pitch = radians(pitch)
-    return Vector(-1 * cos(pitch) * cos(yaw), -sin(pitch), cos(pitch) * sin(yaw))
+
+    x = -1 * cos(pitch) * sin(yaw)
+    y = -sin(pitch)
+    z = cos(yaw) * cos(pitch)
+
+    return Vector(x, y, z)
 
