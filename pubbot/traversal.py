@@ -14,9 +14,9 @@ def walk(start, dir):
         dy = ceiling(pos.y) - pos.y
         dz = ceiling(pos.z) - pos.z
 
-        if dx < min(dy, dz):
+        if dx <= min(dy, dz):
             ratio = dx / pos.x
-        elif dy < min(dx, dz):
+        elif dy <= min(dx, dz):
             ratio = dy / pos.y
         else:
             ratio = dz / pos.z
