@@ -14,10 +14,8 @@
 
 # Maths stuff. Totally a NIH, to try and learn stuff.
 
-from math import atan2, cos, sin, sqrt, pi, floor
+from math import atan2, cos, sin, sqrt, pi, floor, degrees, radians
 
-RAD2DEGREE = 180.0 / pi
-DEGREE2RAD = pi / 180.0
 
 class Vector(object):
 
@@ -43,9 +41,9 @@ class Vector(object):
 
     def to_angles(self):
         forward = sqrt(self.x*self.x + self.z*self.z)
-        yaw = atan2(self.x * -1.0, self.z) * RAD2DEGREE
-        pitch = atan2(self.y, forward) * RAD2DEGREE
-        return (yaw, 360-pitch)
+        yaw = atan2(self.x * -1.0, self.z)
+        pitch = atan2(self.y, forward)
+        return (degrees(yaw), 360-degrees(pitch))
 
     def floor(self):
         return Vector(int(floor(self.x)), int(floor(self.y)), int(floor(self.z)))
@@ -86,7 +84,7 @@ class Vector(object):
     def __div__(self, other):
         return Vector(self.x / other, self.y / other, self.z / other)
 
-    def __idiv(self, other):
+    def __idiv__(self, other):
         self.x /= other
         self.y /= other
         self.z /= other
@@ -110,8 +108,7 @@ def cross_product(a, b):
 
 
 def forward(yaw, pitch):
-    #FIXME: I completely don't work. Should have gone to uni instead of getting a coding job ;_;
-    yaw *= DEGREE2RAD
-    pitch *= DEGREE2RAD
+    yaw = radians(yaw)
+    pitch = radians(pitch)
     return Vector(-1 * cos(pitch) * cos(yaw), -sin(pitch), cos(pitch) * sin(yaw))
 
