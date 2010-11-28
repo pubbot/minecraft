@@ -114,6 +114,14 @@ class BaseMinecraftClientProtocol(Protocol):
                 z = yield self.reader.read_int()
                 self.on_spawn_position(x, y, z)
 
+            elif packet_id == 0x08:
+                half_hearts = yield self.reader.read_byte()
+                #self.on_player_health(half_hearts)
+
+            elif packet_id == 0x09:
+                #self.on_player_respawn()
+                pass
+
             elif packet_id == 0x10:
                 eid = yield self.reader.read_int()
                 item_id = yield self.reader.read_short()
@@ -230,6 +238,11 @@ class BaseMinecraftClientProtocol(Protocol):
                 yaw = yield self.reader.read_byte()
                 pitch = yield self.reader.read_byte()
                 self.on_entity_teleport(eid, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x26:
+                eid = yield self.reader.read_int()
+                damage = yield self.reader.read_byte()
+                #self.on_entity_damage(eid, damage)
 
             elif packet_id == 0x27:
                 eid = yield self.reader.read_int()
@@ -437,10 +450,14 @@ class BaseMinecraftClientProtocol(Protocol):
         self.writer.write_short(count)
         self.writer.write_xxxx(payload)
 
-    def send_0x07(self, eid, ignore2):
+    def send_use_entity(self, pid, eid):
         self.writer.write_packet_id(0x07)
+        self.writer.write_int(pid)
         self.writer.write_int(eid)
-        self.writer.write_int(ignore2)
+        self.writer.write_bool(attacking)
+
+    def send_respawn(self):
+        self.writer.write_packet_id(0x09)
 
     def send_player(self, on_ground):
         self.writer.write_packet_id(0x0A)
