@@ -197,6 +197,18 @@ class Bot(object):
 
             acts = activity.flyto(self, pos)
 
+        elif message.startswith("tunnel"):
+            try:
+                ent = self.protocol.entities.names[name]
+            except:
+                self.protocol.send_chat_message("i don't know where you are")
+                return
+
+            dir = directions(ent.yaw, ent.pitch).forward
+            tunnel_loc = self.world.trace(ent.pos, dir)
+
+            self.protocol.send_chat_message("I'm looking at %s but you didnt teach me to tunnel yet", tunnel_loc)
+
         elif message.startswith("orient"):
             if len(message) > 6:
                 pitch, yaw = message.strip().split(" ")[1:]
