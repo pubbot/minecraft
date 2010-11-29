@@ -204,6 +204,7 @@ class Bot(object):
                 self.protocol.send_chat_message("i don't know where you are")
                 return
 
+            from pubbot.quaternion import directions
             dir = directions(ent.yaw, ent.pitch).forward
             tunnel_loc = self.world.trace(ent.pos, dir)
 

@@ -334,7 +334,7 @@ class BaseMinecraftClientProtocol(Protocol):
             if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
-        self.send_login_request(4, self.username, self.server_password, 0, 0)
+        self.send_login_request(5, self.username, self.server_password, 0, 0)
 
     def on_chat_message(self, message):
         """
