@@ -95,24 +95,36 @@ class BaseMinecraftClientProtocol(Protocol):
                 self.on_time_update(time)
 
             elif packet_id == 0x05:
-                type = yield self.reader.read_int()
-                count = yield self.reader.read_short()
+                #type = yield self.reader.read_int()
+                #count = yield self.reader.read_short()
 
-                payload = {}
-                for i in range(count):
-                    item_id = yield self.reader.read_short()
-                    if item_id != -1:
-                        count = yield self.reader.read_byte()
-                        health = yield self.reader.read_short()
-                        payload[i] = (item_id, count, health)
+                #payload = {}
+                #for i in range(count):
+                #    item_id = yield self.reader.read_short()
+                #    if item_id != -1:
+                #        count = yield self.reader.read_byte()
+                #        health = yield self.reader.read_short()
+                #        payload[i] = (item_id, count, health)
 
-                self.on_player_inventory(type, count, payload)
+                #self.on_player_inventory(type, count, payload)
+
+                entity_id = yield self.reader.read_int()
+                slot = yield self.reader.read_short()
+                item_id = yield self.reader.read_short()
+                unknown = yield self.reader.read_short()
+                #self.on_entity_equipment(entity_id, slot, item_id, unknown)
 
             elif packet_id == 0x06:
                 x = yield self.reader.read_int()
                 y = yield self.reader.read_int()
                 z = yield self.reader.read_int()
                 self.on_spawn_position(x, y, z)
+
+            elif packet_id == 0x07:
+                user = yield self.reader.read_int()
+                target = yield self.reader.read_int()
+                left_click = yield self.reader.read_bool()
+                #self.on_use(user, target, left_click)
 
             elif packet_id == 0x08:
                 half_hearts = yield self.reader.read_byte()
@@ -123,14 +135,14 @@ class BaseMinecraftClientProtocol(Protocol):
                 pass
 
             elif packet_id == 0x10:
-                eid = yield self.reader.read_int()
-                item_id = yield self.reader.read_short()
-                #self.on_holding_change(eid, item_id)
+                slot_id = yield self.reader.read_short()
+                #self.on_holding_change(slot_id)
 
             elif packet_id == 0x0D:
                 x = yield self.reader.read_double()
-                stance = yield self.reader.read_double()
                 y = yield self.reader.read_double()
+                stance = yield self.reader.read_double()
+                #y = yield self.reader.read_double()
                 z = yield self.reader.read_double()
                 yaw = yield self.reader.read_float()
                 pitch = yield self.reader.read_float()
@@ -138,15 +150,26 @@ class BaseMinecraftClientProtocol(Protocol):
                 self.on_player_position_and_look(x, stance, y, z, yaw, pitch, on_ground)
 
             elif packet_id == 0x11:
-                item_type = yield self.reader.read_short()
-                count = yield self.reader.read_byte()
-                life = yield self.reader.read_short()
-                self.on_add_to_inventory(item_type, count, life)
+                #item_type = yield self.reader.read_short()
+                #count = yield self.reader.read_byte()
+                #life = yield self.reader.read_short()
+                #self.on_add_to_inventory(item_type, count, life)
+                entity_id = yield self.reader.read_int()
+                in_bed = yield self.reader.read_byte()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_byte()
+                z = yield self.reader.read_int()
+                # self.on_use_bed()
 
             elif packet_id == 0x12:
                 eid = yield self.reader.read_int()
                 animate = yield self.reader.read_byte()
                 self.on_arm_animation(eid, animate)
+
+            elif packet_id == 0x13:
+                eid = yield self.reader.read_int()
+                action = yield self.reader.read_byte()
+                # self.on_action()
 
             elif packet_id == 0x14:
                 eid = yield self.reader.read_int()
@@ -192,7 +215,27 @@ class BaseMinecraftClientProtocol(Protocol):
                 z = yield self.reader.read_int()
                 yaw = yield self.reader.read_byte()
                 pitch = yield self.reader.read_byte()
+
+                # FIXME:Indexed etadata....
+
                 self.on_mob_spawn(eid, type, x, y, z, yaw, pitch)
+
+            elif packet_id == 0x19:
+                # painting
+                eid = yield self.reader.read_int()
+                title = yield self.reader.read_string()
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_int()
+                z = yield self.reader.read_int()
+                direction = yield self.reader.read_int()
+
+            elif packet_id == 0x1B:
+                yield self.reader.read_float()
+                yield self.reader.read_float()
+                yield self.reader.read_float()
+                yield self.reader.read_float()
+                yield self.reader.read_bool()
+                yield self.reader.read_bool()
 
             elif packet_id == 0x1C:
                 eid = yield self.reader.read_int()
@@ -248,6 +291,10 @@ class BaseMinecraftClientProtocol(Protocol):
                 eid = yield self.reader.read_int()
                 ignore2 = yield self.reader.read_int()
 
+            elif packet_id == 0x28:
+                eid = yield self.reader.read_int()
+                metadata = yield self.reader.read_metadata()
+
             elif packet_id == 0x32:
                 x = yield self.reader.read_int()
                 z = yield self.reader.read_int()
@@ -282,6 +329,13 @@ class BaseMinecraftClientProtocol(Protocol):
                 metadata = yield self.reader.read_byte()
                 self.on_block_change(x, y, z, type, metadata)
 
+            elif packet_id == 0x36:
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_short()
+                z = yield self.reader.read_int()
+                instrument_type = yield self.reader.read_byte()
+                pitch = yield self.reader.read_byte()
+
             elif packet_id == 0x3B:
                 x = yield self.reader.read_int()
                 y = yield self.reader.read_short()
@@ -294,6 +348,61 @@ class BaseMinecraftClientProtocol(Protocol):
                 payload = {}
 
                 self.on_complex_entity(x, y, z, payload)
+
+            elif packet_id == 0x3C:
+                x = yield self.reader.read_double()
+                y = yield self.reader.read_double()
+                z = yield self.reader.read_double()
+                unknown = yield self.reader.read_float()
+                record_count = yield self.reader.read_int()
+                for i in range(record_count):
+                    yield self.reader.read_byte()
+                    yield self.reader.read_byte()
+                    yield self.reader.read_byte()
+
+            elif packet_id == 0x46:
+                unknown1 = yield self.reader.read_byte()
+                self.on_invalid_bed(unknown1)
+
+            elif packet_id == 0x64:
+                yield self.reader.read_byte()
+                yield self.reader.read_byte()
+                yield self.reader.read_string()
+                yield self.reader.read_byte()
+
+            elif packet_id == 0x65:
+                yield self.reader.read_byte()
+
+            elif packet_id == 0x67:
+                window = yield self.reader.read_byte()
+                slot = yield self.reader.read_short()
+                item_id = yield self.reader.read_short()
+                item_count = yield self.reader.read_byte()
+                item_uses = yield self.reader.read_short()
+
+            elif packet_id == 0x68:
+                window = yield self.reader.read_byte()
+                count = yield self.reader.read_short()
+                payload = FML PAYLOAD
+
+            elif packet_id == 0x69:
+                window = yield self.reader.read_byte()
+                progress = yield self.reader.read_short()
+                value = yield self.reader.read_short()
+
+            elif packet_id == 0x6A:
+                window = yield self.read_byte()
+                action = yield self.read_short()
+                accepted = yield self.read_bool()
+
+            elif packet_id == 0x82:
+                x = yield self.reader.read_int()
+                y = yield self.reader.read_short()
+                z = yield self.reader.read_int()
+                text1 = yield self.reader.read_string()
+                text2 = yield self.reader.read_string()
+                text3 = yield self.reader.read_string()
+                text4 = yield self.reader.read_string()
 
             elif packet_id == 0xFF:
                 reason = yield self.reader.read_string()
@@ -334,7 +443,7 @@ class BaseMinecraftClientProtocol(Protocol):
             if confirmation != "OK":
                 raise ValueError("Minecraft.net says no")
 
-        self.send_login_request(5, self.username, self.server_password, 0, 0)
+        self.send_login_request(10, self.username, self.server_password, 0, 0)
 
     def on_chat_message(self, message):
         """
@@ -423,6 +532,9 @@ class BaseMinecraftClientProtocol(Protocol):
         """
         log.msg("Got kicked: %s" % reason)
         self.transport.loseConnection()
+
+    def on_invalid_bed(self, unknown1):
+        pass
 
     def send_keep_alive(self):
         self.writer.write_packet_id(0x00)
