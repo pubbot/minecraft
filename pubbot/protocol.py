@@ -217,6 +217,7 @@ class BaseMinecraftClientProtocol(Protocol):
                 pitch = yield self.reader.read_byte()
 
                 # FIXME:Indexed etadata....
+                yield self.reader.read_metadata()
 
                 self.on_mob_spawn(eid, type, x, y, z, yaw, pitch)
 

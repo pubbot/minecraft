@@ -89,6 +89,32 @@ class BaseMinecraftReader(object):
             res.append((yield readfunc()))
         defer.returnValue(res)
 
+    @defer.inlineCallbacks
+    def read_metadata(self):
+        while True:
+            x = yield self.read_byte()
+            if x == 127:
+                break
+
+            y = (x >> 5)
+
+            if y == 0:
+                yield self.read_byte()
+            elif y == 1:
+                yield self.read_short()
+            elif y == 2:
+                yield self.read_int()
+            elif y == 3:
+                yield self.read_float()
+            elif y == 4:
+                yield self.read_string()
+            elif y == 5:
+                yield self.read_short()
+                yield self.read_byte()
+                yield self.read_short()
+            else:
+                print "y=", y
+
 
 class MinecraftReader(BaseMinecraftReader):
 
