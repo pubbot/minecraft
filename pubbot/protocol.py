@@ -103,6 +103,7 @@ class BaseMinecraftClientProtocol(Protocol):
                 #    item_id = yield self.reader.read_short()
                 #    if item_id != -1:
                 #        count = yield self.reader.read_byte()
+
                 #        health = yield self.reader.read_short()
                 #        payload[i] = (item_id, count, health)
 
@@ -384,7 +385,14 @@ class BaseMinecraftClientProtocol(Protocol):
             elif packet_id == 0x68:
                 window = yield self.reader.read_byte()
                 count = yield self.reader.read_short()
-                payload = FML PAYLOAD
+
+                payload = {}
+                for i in range(count):
+                    item_id = yield self.reader.read_short()
+                    if item_id != -1:
+                        count = yield self.reader.read_byte()
+                        health = yield self.reader.read_short()
+                        payload[i] = (item_id, count, health)
 
             elif packet_id == 0x69:
                 window = yield self.reader.read_byte()
