@@ -129,7 +129,7 @@ class BaseMinecraftClientProtocol(Protocol):
 
             elif packet_id == 0x08:
                 half_hearts = yield self.reader.read_byte()
-                #self.on_player_health(half_hearts)
+                self.on_player_health(half_hearts)
 
             elif packet_id == 0x09:
                 #self.on_player_respawn()
@@ -379,8 +379,9 @@ class BaseMinecraftClientProtocol(Protocol):
                 window = yield self.reader.read_byte()
                 slot = yield self.reader.read_short()
                 item_id = yield self.reader.read_short()
-                item_count = yield self.reader.read_byte()
-                item_uses = yield self.reader.read_short()
+                if item_id != -1:
+                    item_count = yield self.reader.read_byte()
+                    item_uses = yield self.reader.read_short()
 
             elif packet_id == 0x68:
                 window = yield self.reader.read_byte()
@@ -473,13 +474,16 @@ class BaseMinecraftClientProtocol(Protocol):
         pass
 
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
-        if self.state != "ready":
-            self.send_player_position_and_look(x, y, stance, z, yaw, pitch, on_ground)
+        self.send_player_position_and_look(x, y, stance, z, yaw, pitch, on_ground)
 
+        if self.state != "ready":
             self.keepalive = task.LoopingCall(self.send_keep_alive)
             self.keepalive.start(40)
 
             self.state = "ready"
+
+    def on_player_health(self, half_hearts):
+        pass
 
     def on_add_to_inventory(self, item_type, count, life):
         pass
@@ -660,7 +664,7 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
     def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
         should_start = False
 
-        if self.state != "ready":
+        if self.state != "ready" and not self.bot.started:
             # Don't start simulating until at *least* the chunk we are in is loaded
             try:
                 self.world.get_chunk(Vector(x, y, z))
@@ -678,8 +682,11 @@ class MinecraftClientProtocol(BaseMinecraftClientProtocol):
         self.bot.pitch = pitch
         self.bot.on_ground = on_ground
 
-        if should_start:
+        if should_start and not self.bot.started:
             self.bot.start()
+
+    def on_player_health(self, half_hearts):
+        self.bot.on_health(half_hearts)
 
     def on_named_entity_spawn(self, eid, player_name, x, y, z, yaw, pitch, current_item):
         self.entities.on_named_entity_spawn(eid, player_name, x, y, z, yaw, pitch, current_item)

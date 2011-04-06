@@ -39,6 +39,8 @@ class Source(object):
 class Bot(object):
 
     def __init__(self, protocol):
+        self.started = False
+
         self.protocol = protocol
         self.name = protocol.username
 
@@ -70,6 +72,8 @@ class Bot(object):
         return Vector(self.x, self.y+1.65, self.z)
 
     def start(self):
+        self.started = True
+
         self.update_task = task.LoopingCall(self.frame)
         self.update_task.start(0.1)
 
@@ -84,11 +88,11 @@ class Bot(object):
             length = (entity.pos-self.pos).length()
             nearby.append((length, entity))
         if not nearby:
-            #log.msg("No one is nearby")
+            log.msg("No one is nearby")
             return
-        #log.msg(len(nearby))
+        log.msg(len(nearby))
         nearby.sort()
-        #log.msg(nearby[0][1].player_name, nearby[0][0])
+        log.msg(nearby[0][1].player_name, nearby[0][0])
         pos = nearby[0][1].pos
         self.look_at(pos.x, pos.y+1.7, pos.z)
         if nearby[0][0] > 5 or nearby[0][0] < -5:
@@ -156,6 +160,10 @@ class Bot(object):
 
     def place_makekey(self, place):
         return re.sub('[\W_]+', '', place).lower()
+
+    def on_health(self, health):
+        log.msg("health: %s", health)
+        self.health = health
 
     def on_chat(self, name, message):
         acts = None
