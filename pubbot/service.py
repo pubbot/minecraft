@@ -14,8 +14,9 @@
 
 from twisted.application import service, internet
 from twisted.internet import defer
-from twisted.python import usage
+from twisted.python import usage, log
 from twisted.web.client import getPage
+import urllib
 
 from pubbot.client import MinecraftClientFactory
 
@@ -28,6 +29,8 @@ class Options(usage.Options):
         ]
 
 class MinecraftClientService(service.MultiService):
+
+    LAUNCHER_VERSION = 13
 
     def __init__(self, username, password, host="localhost", port=25565):
         self.username = username
@@ -45,16 +48,32 @@ class MinecraftClientService(service.MultiService):
 
     @defer.inlineCallbacks
     def login(self):
-        page = yield getPage("http://www.minecraft.net/game/getversion.jsp?user=%s&password=%s&version=12" % (self.username, self.password))
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+        postdata = urllib.urlencode(dict(
+            user = self.username,
+            password = self.password,
+            version = str(self.LAUNCHER_VERSION),
+            ))
+
+        page = yield getPage("https://login.minecraft.net", method='POST', postdata=postdata, headers=headers)
         try:
-            version, ticket, self.username, self.session_id, dummy = page.split(":")
+            version, ticket, self.username, self.session_id, self.uid = page.split(":")
         except:
             raise ValueError("Need to raise a better exception, but '%s' isnt a valid handshake.." % page)
+
+        log.msg(page)
+        log.msg("Case corrected username is '%s'" % self.username)
+        log.msg("UID is '%s'" % self.uid)
+        log.msg("Session id is '%s'" % self.session_id)
+
         self.factory = MinecraftClientFactory(self.username, self.password, self.session_id)
         self.client = internet.TCPClient(self.host, self.port, self.factory)
         self.client.setServiceParent(self)
 
 
 def makeService(cfg):
-    return MinecraftClientService(cfg["username"], cfg["password"], cfg["host"], cfg["port"])
+    return MinecraftClientService(cfg["username"], cfg["password"], cfg["host"], int(cfg["port"]))
 

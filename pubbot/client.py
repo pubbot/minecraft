@@ -43,9 +43,9 @@ class MinecraftClientFactory(ClientFactory):
         # What stuff can they access out of the box?
         from pubbot.vector import Vector
         factory.namespace['protocol'] = p
-        factory.namespace['world'] = p.world
-        factory.namespace['entities'] = p.entities
-        factory.namespace['bot'] = p.bot
+        #factory.namespace['world'] = p.world
+        #factory.namespace['entities'] = p.entities
+        #factory.namespace['bot'] = p.bot
         factory.namespace['Vector'] = Vector
 
         return port

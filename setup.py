@@ -10,6 +10,8 @@ setup(
     packages = ['pubbot', 'twisted.plugins'],
     install_requires = [
         'Twisted',
+        'construct>-2.03',
+        'pycrypto==2.6',
     ],
     package_data={'twisted': ['plugins/pubbot.py']},
 )

@@ -20,9 +20,12 @@ from twisted.internet.protocol import Protocol
 from twisted.web.client import getPage
 from twisted.python import log
 
-from pubbot.reader import MinecraftReader, NBTReader
-from pubbot.writer import MinecraftWriter
-from pubbot.vector import Vector
+from Crypto import Random
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_v1_5
+
+from .packets import make_packet, parse_packets, packet_names
+
 
 class BaseMinecraftClientProtocol(Protocol):
 
@@ -34,697 +37,83 @@ class BaseMinecraftClientProtocol(Protocol):
     implementing useful clients
     """
 
-    server_password = "Password"
+    VERSION = 39
 
     def __init__(self, username, password, session_id):
         self.username = username
         self.password = password
         self.session_id = session_id
         self.state = "not-ready"
+        self.buffered = ""
+        self.encryption_on = False
+
+    def dataReceived(self, data):
+        if self.encryption_on:
+            data = self.decryptor.decrypt(data)
+
+        packets, self.buffered = parse_packets(self.buffered + data)
+        for p in packets:
+            packet_id, packet = p
+            packet_name = packet_names[packet_id]
+            log.msg("SERVER %s %s" % (packet_name, packet))
+            try:
+                fn = getattr(self, "on_" + packet_name.replace("-", "_"))
+            except AttributeError:
+                log.msg("Packet not processed: %s %s" % p)
+                continue
+            fn(packet)
+
+    def send(self, name, **kwargs):
+        log.msg("CLIENT %s %s" % (name, kwargs))
+
+        data = make_packet(name, kwargs)
+        if self.encryption_on:
+            data = self.encryptor.encrypt(data)
+        self.transport.write(data)
 
     def connectionMade(self):
-        """
-        I am called when a connection has been established to a Minecraft server
-        """
-        self.writer = MinecraftWriter(self.transport)
-        self.reader = MinecraftReader()
-        self.dataReceived = self.reader.dataReceived
-
-        self.read_loop()
-
-        log.msg("ATTEMPTING TO HANDSHAKE")
-        self.send_handshake(self.username)
+        peer = self.transport.getPeer()
+        self.send("handshake", username=self.username, protocol=self.VERSION, server_host=peer.host, server_port=peer.port)
 
     def connectionLost(self, reason):
         log.msg("connectionLost", reason)
 
     @defer.inlineCallbacks
-    def read_loop(self):
-        """
-        I constantly read incoming packets off the wire. I magically suspend when there is no more data
-        and resume when there is (see MinecraftReader for how that is implemented)
-        """
-        log.msg("Entering read loop")
-        previous_packet_id = -1
+    def on_encryption_key_request(self, packet):
+        self.public_key = RSA.importKey(packet.public_key)
+        self.shared_key = Random.get_random_bytes(16)
 
-        while True:
-            packet_id = yield self.reader.read_packet_id()
-            #log.msg("Got packet: 0x%02x" % packet_id)
+        log.msg("About to register against session server")
 
-            if packet_id == 0x00:
-                self.on_keep_alive()
+        # Name verification call...
+        confirmation = yield getPage("http://session.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, packet.server_id.encode("UTF-8")), timeout=60)
+        if confirmation != "OK":
+            raise ValueError("Minecraft.net says: %s", confirmation)
 
-            elif packet_id == 0x01:
-                unknown1 = yield self.reader.read_int()
-                unknown2 = yield self.reader.read_string()
-                unknown3 = yield self.reader.read_string()
-                unknown4 = yield self.reader.read_long()
-                unknown5 = yield self.reader.read_byte()
-                self.on_login_response(unknown1, unknown2, unknown3)
+        log.msg("Registered against session server - setting up ciphers")
 
-            elif packet_id == 0x02:
-                connection_hash = yield self.reader.read_string()
-                self.on_handshake(connection_hash)
+        self.encryptor = AES.new(self.shared_key, AES.MODE_CFB, self.shared_key, segment_size=8)
+        self.decryptor = AES.new(self.shared_key, AES.MODE_CFB, self.shared_key, segment_size=8)
 
-            elif packet_id == 0x03:
-                message = yield self.reader.read_string()
-                self.on_chat_message(message)
+        self.send("encryption-key-response",
+            shared_secret=PKCS1_v1_5.new(self.public_key).encrypt(self.shared_key),
+            verify_token=PKCS1_v1_5.new(self.public_key).encrypt(packet.verify_token),
+            )
 
-            elif packet_id == 0x04:
-                time = yield self.reader.read_long()
-                self.on_time_update(time)
+    def on_encryption_key_response(self, packet):
+        self.encryption_on = True
+        self.send("client-status", status=0)
 
-            elif packet_id == 0x05:
-                #type = yield self.reader.read_int()
-                #count = yield self.reader.read_short()
-
-                #payload = {}
-                #for i in range(count):
-                #    item_id = yield self.reader.read_short()
-                #    if item_id != -1:
-                #        count = yield self.reader.read_byte()
-
-                #        health = yield self.reader.read_short()
-                #        payload[i] = (item_id, count, health)
-
-                #self.on_player_inventory(type, count, payload)
-
-                entity_id = yield self.reader.read_int()
-                slot = yield self.reader.read_short()
-                item_id = yield self.reader.read_short()
-                unknown = yield self.reader.read_short()
-                #self.on_entity_equipment(entity_id, slot, item_id, unknown)
-
-            elif packet_id == 0x06:
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                self.on_spawn_position(x, y, z)
-
-            elif packet_id == 0x07:
-                user = yield self.reader.read_int()
-                target = yield self.reader.read_int()
-                left_click = yield self.reader.read_bool()
-                #self.on_use(user, target, left_click)
-
-            elif packet_id == 0x08:
-                half_hearts = yield self.reader.read_byte()
-                self.on_player_health(half_hearts)
-
-            elif packet_id == 0x09:
-                #self.on_player_respawn()
-                pass
-
-            elif packet_id == 0x10:
-                slot_id = yield self.reader.read_short()
-                #self.on_holding_change(slot_id)
-
-            elif packet_id == 0x0D:
-                x = yield self.reader.read_double()
-                y = yield self.reader.read_double()
-                stance = yield self.reader.read_double()
-                #y = yield self.reader.read_double()
-                z = yield self.reader.read_double()
-                yaw = yield self.reader.read_float()
-                pitch = yield self.reader.read_float()
-                on_ground = yield self.reader.read_bool()
-                self.on_player_position_and_look(x, stance, y, z, yaw, pitch, on_ground)
-
-            elif packet_id == 0x11:
-                #item_type = yield self.reader.read_short()
-                #count = yield self.reader.read_byte()
-                #life = yield self.reader.read_short()
-                #self.on_add_to_inventory(item_type, count, life)
-                entity_id = yield self.reader.read_int()
-                in_bed = yield self.reader.read_byte()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_byte()
-                z = yield self.reader.read_int()
-                # self.on_use_bed()
-
-            elif packet_id == 0x12:
-                eid = yield self.reader.read_int()
-                animate = yield self.reader.read_byte()
-                self.on_arm_animation(eid, animate)
-
-            elif packet_id == 0x13:
-                eid = yield self.reader.read_int()
-                action = yield self.reader.read_byte()
-                # self.on_action()
-
-            elif packet_id == 0x14:
-                eid = yield self.reader.read_int()
-                player_name = yield self.reader.read_string()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                rotation = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-                current_item = yield self.reader.read_short()
-                self.on_named_entity_spawn(eid, player_name, x, y, z, rotation, pitch, current_item)
-
-            elif packet_id == 0x15:
-                eid = yield self.reader.read_int()
-                item = yield self.reader.read_short()
-                count = yield self.reader.read_byte()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                rotation = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-                roll = yield self.reader.read_byte()
-                self.on_pickup_spawn(eid, item, count, x, y, z, rotation, pitch, roll)
-
-            elif packet_id == 0x16:
-                collected_eid = yield self.reader.read_int()
-                collector_eid = yield self.reader.read_int()
-                self.on_collect_item(collected_eid, collector_eid)
-
-            elif packet_id == 0x17:
-                eid = yield self.reader.read_int()
-                type = yield self.reader.read_byte()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                self.on_add_object_vehicle(eid, type, x, y, z)
-
-            elif packet_id == 0x18:
-                eid = yield self.reader.read_int()
-                type = yield self.reader.read_byte()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                yaw = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-
-                # FIXME:Indexed etadata....
-                yield self.reader.read_metadata()
-
-                self.on_mob_spawn(eid, type, x, y, z, yaw, pitch)
-
-            elif packet_id == 0x19:
-                # painting
-                eid = yield self.reader.read_int()
-                title = yield self.reader.read_string()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                direction = yield self.reader.read_int()
-
-            elif packet_id == 0x1B:
-                yield self.reader.read_float()
-                yield self.reader.read_float()
-                yield self.reader.read_float()
-                yield self.reader.read_float()
-                yield self.reader.read_bool()
-                yield self.reader.read_bool()
-
-            elif packet_id == 0x1C:
-                eid = yield self.reader.read_int()
-                x = yield self.reader.read_short()
-                y = yield self.reader.read_short()
-                z = yield self.reader.read_short()
-
-            elif packet_id == 0x1D:
-                eid = yield self.reader.read_int()
-                self.on_destroy_entity(eid)
-
-            elif packet_id == 0x1E:
-                eid = yield self.reader.read_int()
-                self.on_entity(eid)
-
-            elif packet_id == 0x1F:
-                eid = yield self.reader.read_int()
-                x = yield self.reader.read_byte()
-                y = yield self.reader.read_byte()
-                z = yield self.reader.read_byte()
-                self.on_entity_relative_move(eid, x, y, z)
-
-            elif packet_id == 0x20:
-                eid = yield self.reader.read_int()
-                yaw = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-                self.on_entity_look(eid, yaw, pitch)
-
-            elif packet_id == 0x21:
-                eid = yield self.reader.read_int()
-                x = yield self.reader.read_byte()
-                y = yield self.reader.read_byte()
-                z = yield self.reader.read_byte()
-                yaw = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-                self.on_entity_look_and_relative_move(eid, x, y, z, yaw, pitch)
-
-            elif packet_id == 0x22:
-                eid = yield self.reader.read_int()
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                yaw = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-                self.on_entity_teleport(eid, x, y, z, yaw, pitch)
-
-            elif packet_id == 0x26:
-                eid = yield self.reader.read_int()
-                damage = yield self.reader.read_byte()
-                #self.on_entity_damage(eid, damage)
-
-            elif packet_id == 0x27:
-                eid = yield self.reader.read_int()
-                ignore2 = yield self.reader.read_int()
-
-            elif packet_id == 0x28:
-                eid = yield self.reader.read_int()
-                metadata = yield self.reader.read_metadata()
-
-            elif packet_id == 0x32:
-                x = yield self.reader.read_int()
-                z = yield self.reader.read_int()
-                mode = yield self.reader.read_bool()
-                self.on_pre_chunk(x, z, mode)
-
-            elif packet_id == 0x33:
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_short()
-                z = yield self.reader.read_int()
-                size_x = yield self.reader.read_byte()
-                size_y = yield self.reader.read_byte()
-                size_z = yield self.reader.read_byte()
-                compressed_chunk_size = yield self.reader.read_int()
-                compressed_chunk = yield self.reader.read_raw(compressed_chunk_size)
-                self.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
-
-            elif packet_id == 0x34:
-                chunk_x = yield self.reader.read_int()
-                chunk_z = yield self.reader.read_int()
-                array_size = yield self.reader.read_short()
-                coords = yield self.reader.read_array(self.reader.read_short, array_size)
-                kinds = yield self.reader.read_array(self.reader.read_byte, array_size)
-                metadatas = yield self.reader.read_array(self.reader.read_byte, array_size)
-                self.on_multi_block_change(chunk_x, chunk_z, array_size, coords, kinds, metadatas)
-
-            elif packet_id == 0x35:
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_byte()
-                z = yield self.reader.read_int()
-                type = yield self.reader.read_byte()
-                metadata = yield self.reader.read_byte()
-                self.on_block_change(x, y, z, type, metadata)
-
-            elif packet_id == 0x36:
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_short()
-                z = yield self.reader.read_int()
-                instrument_type = yield self.reader.read_byte()
-                pitch = yield self.reader.read_byte()
-
-            elif packet_id == 0x3B:
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_short()
-                z = yield self.reader.read_int()
-                payload_size = yield self.reader.read_short()
-                payload_raw = yield self.reader.read_raw(payload_size)
-
-                #payload = yield NBTReader(StringIO(payload_raw)).read_nbt()
-                #print payload
-                payload = {}
-
-                self.on_complex_entity(x, y, z, payload)
-
-            elif packet_id == 0x3C:
-                x = yield self.reader.read_double()
-                y = yield self.reader.read_double()
-                z = yield self.reader.read_double()
-                unknown = yield self.reader.read_float()
-                record_count = yield self.reader.read_int()
-                for i in range(record_count):
-                    yield self.reader.read_byte()
-                    yield self.reader.read_byte()
-                    yield self.reader.read_byte()
-
-            elif packet_id == 0x46:
-                unknown1 = yield self.reader.read_byte()
-                self.on_invalid_bed(unknown1)
-
-            elif packet_id == 0x64:
-                yield self.reader.read_byte()
-                yield self.reader.read_byte()
-                yield self.reader.read_string()
-                yield self.reader.read_byte()
-
-            elif packet_id == 0x65:
-                yield self.reader.read_byte()
-
-            elif packet_id == 0x67:
-                window = yield self.reader.read_byte()
-                slot = yield self.reader.read_short()
-                item_id = yield self.reader.read_short()
-                if item_id != -1:
-                    item_count = yield self.reader.read_byte()
-                    item_uses = yield self.reader.read_short()
-
-            elif packet_id == 0x68:
-                window = yield self.reader.read_byte()
-                count = yield self.reader.read_short()
-
-                payload = {}
-                for i in range(count):
-                    item_id = yield self.reader.read_short()
-                    if item_id != -1:
-                        count = yield self.reader.read_byte()
-                        health = yield self.reader.read_short()
-                        payload[i] = (item_id, count, health)
-
-            elif packet_id == 0x69:
-                window = yield self.reader.read_byte()
-                progress = yield self.reader.read_short()
-                value = yield self.reader.read_short()
-
-            elif packet_id == 0x6A:
-                window = yield self.read_byte()
-                action = yield self.read_short()
-                accepted = yield self.read_bool()
-
-            elif packet_id == 0x82:
-                x = yield self.reader.read_int()
-                y = yield self.reader.read_short()
-                z = yield self.reader.read_int()
-                text1 = yield self.reader.read_string()
-                text2 = yield self.reader.read_string()
-                text3 = yield self.reader.read_string()
-                text4 = yield self.reader.read_string()
-
-            elif packet_id == 0xFF:
-                reason = yield self.reader.read_string()
-                self.on_kick(reason)
-                defer.returnValue(None)
-
-            else:
-                log.msg("Got unknown packet_id: %x, Previous was: %x" % (packet_id, previous_packet_id))
-                self.send_disconnect("I'm sorry Dave, didn't understand that")
-                defer.returnValue(None)
-
-            previous_packet_id = packet_id
-            #log.msg("Packet processed")
-
-    def on_keep_alive(self):
-        self.send_keep_alive()
-
-    def on_login_response(self, some_int, some_string_1, some_string_2):
-        """
-        I am sent by the server if it accepts the login request
-        """
+    def on_login(self, packet):
         pass
 
-    @defer.inlineCallbacks
-    def on_handshake(self, connection_hash):
-        """
-        I am the first packet sent when the client connects and am used for user authentication
-        """
-        log.msg("on_handshake('%s')" % connection_hash)
+    def on_ping(self, packet):
+        self.send("ping", packet.pid)
 
-        if connection_hash == "-":
-            pass
-        elif connection_hash == "+":
-            pass
-        else:
-            # Name verification call...
-            confirmation = yield getPage("http://www.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, connection_hash.encode("UTF-8")), timeout=60)
-            if confirmation != "OK":
-                raise ValueError("Minecraft.net says no")
+    def on_error(self, packet):
+        log.msg(packet.message)
 
-        self.send_login_request(10, self.username, self.server_password, 0, 0)
-
-    def on_chat_message(self, message):
-        """
-        I am called when the client is sent a chat message
-        """
-        log.msg("Got message: %s" % message)
-
-    def on_time_update(self, time):
-        """
-        I am called with the world or region time in minutes
-        """
-        pass
-
-    def on_player_inventory(self, inv_type, num_items, payload):
-        pass
-
-    def on_spawn_position(self, X, Y, Z):
-        pass
-
-    def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
-        self.send_player_position_and_look(x, y, stance, z, yaw, pitch, on_ground)
-
-        if self.state != "ready":
-            self.keepalive = task.LoopingCall(self.send_keep_alive)
-            self.keepalive.start(40)
-
-            self.state = "ready"
-
-    def on_player_health(self, half_hearts):
-        pass
-
-    def on_add_to_inventory(self, item_type, count, life):
-        pass
-
-    def on_arm_animation(self, eid, animate):
-        pass
-
-    def on_named_entity_spawn(self, eid, player_name, x, y, z, rotation, pitch, current_item):
-        pass
-
-    def on_pickup_spawn(self, eid, item, count, x, y, z, rotation, pitch, roll):
-        pass
-
-    def on_collect_item(self, collected_eid, collector_eid):
-        pass
-
-    def on_add_object_vehicle(self, eid, type, x, y, z):
-        pass
-
-    def on_mob_spawn(self, eid, type, x, y, z, yaw, pitch):
-        pass
-
-    def on_destroy_entity(self, eid):
-        pass
-
-    def on_entity(self, eid):
-        pass
-
-    def on_entity_relative_move(self, eid, x, y, z):
-        pass
-
-    def on_entity_look(self, eid, yaw, pitch):
-        pass
-
-    def on_entity_look_and_relative_move(self, eid, x, y, z, yaw, pitch):
-        pass
-
-    def on_entity_teleport(self, eid, x, y, z, yaw, pitch):
-        pass
-
-    def on_pre_chunk(self, x, z, mode):
-        pass
-
-    def on_map_chunk(self, x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk):
-        pass
-
-    def on_multi_block_change(self, chunk_x, chunk_z, array_size, coords, kinds, metadatas):
-        pass
-
-    def on_block_change(self, x, y, z, type, metadata):
-        pass
-
-    def on_complex_entity(self, x, y, z, payload):
-        pass
-
-    def on_kick(self, reason):
-        """
-        I am called when the server disconnects a client
-        """
-        log.msg("Got kicked: %s" % reason)
-        self.transport.loseConnection()
-
-    def on_invalid_bed(self, unknown1):
-        pass
-
-    def send_keep_alive(self):
-        self.writer.write_packet_id(0x00)
-
-    def send_login_request(self, protocol_version, username, password, unknown1, unknown2):
-        self.writer.write_packet_id(0x01)
-        self.writer.write_int(protocol_version)
-        self.writer.write_string(username)
-        self.writer.write_string(password)
-        self.writer.write_long(unknown1)
-        self.writer.write_byte(unknown2)
-
-    def send_handshake(self, username):
-        self.writer.write_packet_id(0x02)
-        self.writer.write_string(username)
-
-    def send_chat_message(self, message):
-        self.writer.write_packet_id(0x03)
-        self.writer.write_string(message.encode("UTF-8"))
-
-    def send_player_inventory(self, type, count, payload):
-        assert False, "Not figured out size/structure of payload yet"
-        self.writer.write_packet_id(0x05)
-        self.writer.write_int(type)
-        self.writer.write_short(count)
-        self.writer.write_xxxx(payload)
-
-    def send_use_entity(self, pid, eid):
-        self.writer.write_packet_id(0x07)
-        self.writer.write_int(pid)
-        self.writer.write_int(eid)
-        self.writer.write_bool(attacking)
-
-    def send_respawn(self):
-        self.writer.write_packet_id(0x09)
-
-    def send_player(self, on_ground):
-        self.writer.write_packet_id(0x0A)
-        self.writer.write_bool(on_ground)
-
-    def send_player_position(self, x, y, stance, z, on_ground):
-        self.writer.write_packet_id(0x0B)
-        self.writer.write_double(x)
-        self.writer.write_double(y)
-        self.writer.write_double(stance)
-        self.writer.write_double(z)
-        self.writer.write_bool(on_ground)
-
-    def send_player_look(self, yaw, pitch, on_ground):
-        self.writer.write_packet_id(0x0C)
-        self.writer.write_float(yaw)
-        self.writer.write_float(pitch)
-        self.writer.write_bool(on_ground)
-
-    def send_player_position_and_look(self, x, y, stance, z, yaw, pitch, on_ground):
-        self.writer.write_packet_id(0x0D)
-        self.writer.write_double(x)
-        self.writer.write_double(y)
-        self.writer.write_double(stance)
-        self.writer.write_double(z)
-        self.writer.write_float(yaw)
-        self.writer.write_float(pitch)
-        self.writer.write_bool(on_ground)
-
-    def send_player_digging(self, status, x, y, z, face):
-        log.msg("dig", status, x, y, z, face)
-        assert status >= 0 and status <= 3
-        assert face >= 0 and face <= 5
-        self.writer.write_packet_id(0x0E)
-        self.writer.write_byte(status)
-        self.writer.write_int(int(floor(x)))
-        self.writer.write_byte(int(floor(y)))
-        self.writer.write_int(int(floor(z)))
-        self.writer.write_byte(face)
-
-    def send_player_block_placement(self, block_id, x, y, z, direction):
-        assert direction >= 0 and direction <= 5
-        self.writer.write_packet_id(0x0F)
-        self.writer.write_short(block_id)
-        self.writer.write_int(int(floor(x)))
-        self.writer.write_byte(int(floor(y)))
-        self.writer.write_int(int(floor(z)))
-        self.writer.write_byte(direction)
-
-    def send_holding_change(self, unused, block_id):
-        self.writer.write_packet_id(0x10)
-        self.writer.write_int(unused)
-        self.writer.write_short(block_id)
-
-    def send_arm_animation(self, unused, animation):
-        self.writer.write_packet_id(0x12)
-        self.writer.write_int(unused)
-        self.writer.write_byte(animation)
-
-    def send_disconnect(self, reason):
-        self.writer.write_packet_id(0xFF)
-        self.writer.write_string("I'm outta here")
-
-        self.transport.loseConnection()
-
-
-from pubbot import bot, entities, world
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
+    pass
 
-    """ I am a concrete implementation of the client protocol, providing a simple bot """
-
-    def __init__(self, username, password, session_id):
-        BaseMinecraftClientProtocol.__init__(self, username, password, session_id)
-        self.bot = bot.Bot(self)
-        self.entities = entities.Entities()
-        self.world = world.World()
-
-    def on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground):
-        should_start = False
-
-        if self.state != "ready" and not self.bot.started:
-            # Don't start simulating until at *least* the chunk we are in is loaded
-            try:
-                self.world.get_chunk(Vector(x, y, z))
-                should_start = True
-            except KeyError:
-                should_start = True
-
-        BaseMinecraftClientProtocol.on_player_position_and_look(self, x, stance, y, z, yaw, pitch, on_ground)
-
-        self.bot.x = x
-        self.bot.y = y
-        self.bot.z = z
-        self.bot.stance = stance
-        self.bot.yaw = yaw
-        self.bot.pitch = pitch
-        self.bot.on_ground = on_ground
-
-        if should_start and not self.bot.started:
-            self.bot.start()
-
-    def on_player_health(self, half_hearts):
-        self.bot.on_health(half_hearts)
-
-    def on_named_entity_spawn(self, eid, player_name, x, y, z, yaw, pitch, current_item):
-        self.entities.on_named_entity_spawn(eid, player_name, x, y, z, yaw, pitch, current_item)
-
-    def on_entity_relative_move(self, eid, x, y, z):
-        self.entities.on_entity_relative_move(eid, x, y, z)
-
-    def on_entity_look(self, eid, yaw, pitch):
-        self.entities.on_entity_look(eid, yaw, pitch)
-
-    def on_entity_look_and_relative_move(self, eid, x, y, z, yaw, pitch):
-        self.entities.on_entity_look_and_relative_move(eid, x, y, z, yaw, pitch)
-
-    def on_entity_teleport(self, eid, x, y, z, yaw, pitch):
-        self.entities.on_entity_teleport(eid, x, y, z, yaw, pitch)
-
-    def on_pre_chunk(self, x, z, mode):
-        self.world.on_pre_chunk(x, z, mode)
-
-    def on_map_chunk(self, x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk):
-        self.world.on_map_chunk(x, y, z, size_x, size_y, size_z, compressed_chunk_size, compressed_chunk)
-
-    def on_multi_block_change(self, chunk_x, chunk_z, array_size, coords, kinds, metadatas):
-        self.world.on_multi_block_change(chunk_x, chunk_z, array_size, coords, kinds, metadatas)
-
-    def on_block_change(self, x, y, z, type, metadata):
-        self.world.on_block_change(x, y, z, type, metadata)
-
-    def on_chat_message(self, message):
-        log.msg(message)
-
-        if not message.startswith("<"):
-            if message.endswith(" joined the game."):
-                name = message[2:message.find(" joined the game.")]
-                self.bot.on_player_join(name)
-            return
-
-        name, msg = message.split("> ", 1)
-        name = name[1:]
-
-        self.bot.on_chat(name, msg)
