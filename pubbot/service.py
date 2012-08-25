@@ -19,6 +19,7 @@ from twisted.web.client import getPage
 import urllib
 
 from pubbot.client import MinecraftClientFactory
+from pubbot.session import Session
 
 class Options(usage.Options):
     optParameters = [
@@ -37,41 +38,25 @@ class MinecraftClientService(service.MultiService):
         self.password = password
         self.host = host
         self.port = port
+        self.session = None
         service.MultiService.__init__(self)
 
     def startService(self):
-        self.login()
+        self._really_start()
         service.MultiService.startService(self)
 
     def stopService(self):
         service.MultiService.stopService(self)
 
     @defer.inlineCallbacks
-    def login(self):
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            }
-
-        postdata = urllib.urlencode(dict(
-            user = self.username,
-            password = self.password,
-            version = str(self.LAUNCHER_VERSION),
-            ))
-
-        page = yield getPage("https://login.minecraft.net", method='POST', postdata=postdata, headers=headers)
-        try:
-            version, ticket, self.username, self.session_id, self.uid = page.split(":")
-        except:
-            raise ValueError("Need to raise a better exception, but '%s' isnt a valid handshake.." % page)
-
-        log.msg(page)
-        log.msg("Case corrected username is '%s'" % self.username)
-        log.msg("UID is '%s'" % self.uid)
-        log.msg("Session id is '%s'" % self.session_id)
-
-        self.factory = MinecraftClientFactory(self.username, self.password, self.session_id)
+    def _really_start(self):
+        self.session = Session()
+        yield self.session.login(self.username, self.password)
+ 
+        self.factory = MinecraftClientFactory(self.username, self.password, self.session)
         self.client = internet.TCPClient(self.host, self.port, self.factory)
         self.client.setServiceParent(self)
+
 
 
 def makeService(cfg):

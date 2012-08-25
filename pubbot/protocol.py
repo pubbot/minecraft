@@ -39,10 +39,10 @@ class BaseMinecraftClientProtocol(Protocol):
 
     VERSION = 39
 
-    def __init__(self, username, password, session_id):
+    def __init__(self, username, password, session):
         self.username = username
         self.password = password
-        self.session_id = session_id
+        self.session = session
         self.state = "not-ready"
         self.buffered = ""
         self.encryption_on = False
@@ -85,10 +85,11 @@ class BaseMinecraftClientProtocol(Protocol):
 
         log.msg("About to register against session server")
 
-        # Name verification call...
-        confirmation = yield getPage("http://session.minecraft.net/game/joinserver.jsp?user=%s&sessionId=%s&serverId=%s" % (self.username, self.session_id, packet.server_id.encode("UTF-8")), timeout=60)
-        if confirmation != "OK":
-            raise ValueError("Minecraft.net says: %s", confirmation)
+        yield self.session.join_server(
+            packet.server_id.encode('UTF-8'),
+            self.shared_key,
+            packet.public_key,
+            )
 
         log.msg("Registered against session server - setting up ciphers")
 
@@ -108,7 +109,7 @@ class BaseMinecraftClientProtocol(Protocol):
         pass
 
     def on_ping(self, packet):
-        self.send("ping", packet.pid)
+        self.send("ping", pid=packet.pid)
 
     def on_error(self, packet):
         log.msg(packet.message)
