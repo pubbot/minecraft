@@ -25,6 +25,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_v1_5
 
 from .packets import make_packet, parse_packets, packet_names
+from .utils import *
 
 
 class BaseMinecraftClientProtocol(Protocol):
@@ -55,13 +56,20 @@ class BaseMinecraftClientProtocol(Protocol):
         for p in packets:
             packet_id, packet = p
             packet_name = packet_names[packet_id]
-            log.msg("SERVER %s %s" % (packet_name, packet))
+            if not packet_id in (0x38, 0x33):
+                log.msg("SERVER %s %s" % (packet_name, packet))
+            else:
+                log.msg("SERVER %s" % packet_name)
+
             try:
                 fn = getattr(self, "on_" + packet_name.replace("-", "_"))
             except AttributeError:
-                log.msg("Packet not processed: %s %s" % p)
+                log.msg("Packet not processed: %s %s" % (packet_id, packet_name))
                 continue
             fn(packet)
+
+        if self.buffered:
+            log.msg("Waiting for data for packed type %d" % ord(self.buffered[0]))
 
     def send(self, name, **kwargs):
         log.msg("CLIENT %s %s" % (name, kwargs))
@@ -72,6 +80,8 @@ class BaseMinecraftClientProtocol(Protocol):
         self.transport.write(data)
 
     def connectionMade(self):
+        self.loading_map = True
+
         peer = self.transport.getPeer()
         self.send("handshake", username=self.username, protocol=self.VERSION, server_host=peer.host, server_port=peer.port)
 
@@ -113,6 +123,16 @@ class BaseMinecraftClientProtocol(Protocol):
 
     def on_error(self, packet):
         log.msg(packet.message)
+
+    def on_location(self, packet):
+       if self.loading_map:
+            self.send("location",
+                grounded = Grounded.from_packet(packet.grounded),
+                position = Location.from_packet(packet.position),
+                orientation = Orientation.from_packet(packet.orientation),
+                )
+
+            self.loading_map = False
 
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
