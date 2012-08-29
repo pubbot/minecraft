@@ -24,6 +24,7 @@ from Crypto import Random
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_v1_5
 
+from . import bot, entities, world
 from .packets import make_packet, parse_packets, packet_names
 from .utils import *
 
@@ -44,7 +45,6 @@ class BaseMinecraftClientProtocol(Protocol):
         self.username = username
         self.password = password
         self.session = session
-        self.state = "not-ready"
         self.buffered = ""
         self.encryption_on = False
 
@@ -56,15 +56,15 @@ class BaseMinecraftClientProtocol(Protocol):
         for p in packets:
             packet_id, packet = p
             packet_name = packet_names[packet_id]
-            if not packet_id in (0x38, 0x33):
-                log.msg("SERVER %s %s" % (packet_name, packet))
-            else:
-                log.msg("SERVER %s" % packet_name)
+            #if not packet_id in (0x38, 0x33):
+            #    log.msg("SERVER %s %s" % (packet_name, packet))
+            #else:
+            #    log.msg("SERVER %s" % packet_name)
 
             try:
                 fn = getattr(self, "on_" + packet_name.replace("-", "_"))
             except AttributeError:
-                log.msg("Packet not processed: %s %s" % (packet_id, packet_name))
+                #log.msg("Packet not processed: %s %s" % (packet_id, packet_name))
                 continue
             fn(packet)
 
@@ -72,7 +72,7 @@ class BaseMinecraftClientProtocol(Protocol):
             log.msg("Waiting for data for packed type %d" % ord(self.buffered[0]))
 
     def send(self, name, **kwargs):
-        log.msg("CLIENT %s %s" % (name, kwargs))
+        #log.msg("CLIENT %s %s" % (name, kwargs))
 
         data = make_packet(name, kwargs)
         if self.encryption_on:
@@ -125,16 +125,62 @@ class BaseMinecraftClientProtocol(Protocol):
         log.msg(packet.message)
 
     def on_location(self, packet):
-       if self.loading_map:
-            self.send("location",
-                grounded = Grounded.from_packet(packet.grounded),
-                position = Location.from_packet(packet.position),
-                orientation = Orientation.from_packet(packet.orientation),
-                )
-
-            self.loading_map = False
+        self.send("location",
+            grounded = Grounded.from_packet(packet.grounded),
+            position = Location.from_packet(packet.position),
+            orientation = Orientation.from_packet(packet.orientation),
+            )
 
 
 class MinecraftClientProtocol(BaseMinecraftClientProtocol):
-    pass
+
+    def __init__(self, username, password, session):
+        BaseMinecraftClientProtocol.__init__(self, username, password, session)
+        self.bot = bot.Bot(self)
+        self.entities = entities.Entities()
+        self.world = world.World()
+
+    def on_location(self, packet):
+        BaseMinecraftClientProtocol.on_location(self, packet)
+
+        self.bot.on_grounded(grounded=packet.grounded.grounded)
+        self.bot.on_position(x=packet.position.x, y=packet.position.y, z=packet.position.z, stance=packet.position.stance)
+        self.bot.on_orientation(yaw=packet.orientation.rotation, pitch=packet.orientation.pitch)
+
+        if not self.bot.started:
+            self.bot.start()
+
+    def on_update_health(self, packet):
+        self.bot.on_update_health(
+            hp = packet.hp,
+            fp = packet.fp,
+            saturation = packet.saturation,
+            )
+
+
+    def on_spawn_named_entity(self, packet):
+        self.entities.on_spawn_named_entity(
+            eid = packet.eid,
+            username = packet.username,
+            x = packet.x,
+            y = packet.y,
+            z = packet.z,
+            yaw = packet.yaw,
+            pitch = packet.pitch,
+            item = packet.item,
+            )
+
+    def on_entity_position(self, p):
+        self.entities.on_entity_position(p.eid, p.dx, p.dy, p.dz)
+
+    def on_entity_orientation(self, p):
+        self.entities.on_entity_orientation(eid=p.eid, yaw=p.yaw, pitch=p.pitch)
+
+    def on_entity_location(self, p):
+        self.on_entity_position(p)
+        self.on_entity_orientation(p)
+
+    def on_entity_teleport(self, p):
+        self.entities.on_entity_teleport(p.eid, p.x, p.y, p.z)
+        self.on_entity_orientation(p)
 

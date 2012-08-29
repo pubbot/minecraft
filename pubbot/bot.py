@@ -27,6 +27,7 @@ from pubbot import activity, actions
 
 from pubbot.router import Pubbot
 
+from . import packets
 
 class Source(object):
     def __init__(self, protocol):
@@ -75,7 +76,7 @@ class Bot(object):
         self.started = True
 
         self.update_task = task.LoopingCall(self.frame)
-        self.update_task.start(0.1)
+        self.update_task.start(0.05)
 
         # Hack to bootstrap pubbot into doing something
 
@@ -128,9 +129,14 @@ class Bot(object):
 
         #log.msg(self.on_ground)
 
-        self.protocol.send_player(self.on_ground)
-        self.protocol.send_player_position(self.x, self.y, self.stance, self.z, self.on_ground)
-        self.protocol.send_player_look(self.yaw, self.pitch, self.on_ground)
+        self.send_location()
+
+    def send_location(self):
+        self.protocol.send("location",
+            position = packets.Container(x=self.x, y=self.y, z=self.z, stance=self.stance),
+            orientation = packets.Container(yaw=self.yaw, pitch=self.pitch),
+            grounded = packets.Container(grounded=self.on_ground),
+            )
 
     def look_at(self, x, y, z):
         aim = Vector(x, y, z) - self.eyepos
@@ -161,9 +167,23 @@ class Bot(object):
     def place_makekey(self, place):
         return re.sub('[\W_]+', '', place).lower()
 
-    def on_health(self, health):
-        log.msg("health: %s", health)
-        self.health = health
+    def on_grounded(self, grounded):
+        self.on_ground = grounded
+
+    def on_position(self, x, y, z, stance):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.stance = stance
+
+    def on_orientation(self, yaw, pitch):
+        self.yaw = yaw
+        self.pitch = pitch
+
+    def on_update_health(self, hp, fp, saturation):
+        self.health = hp
+        self.food = fp
+        self.saturation = saturation
 
     def on_chat(self, name, message):
         acts = None

@@ -233,7 +233,7 @@ packets = {
             right=1,
             ),
     ),
-    8: Struct("health",
+    8: Struct("update-health",
         UBInt16("hp"),
         UBInt16("fp"),
         BFloat32("saturation"),
